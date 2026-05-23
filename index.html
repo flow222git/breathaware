@@ -102,15 +102,15 @@
         <div class="space-y-3 max-w-xs text-sm text-zen-600 leading-relaxed">
           <div class="flex items-start space-x-3 text-left">
             <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">1</span>
-            <p><strong>按住螢幕：</strong> 代表您正在「吸氣」</p>
+            <p><strong>按住螢幕：</strong> 代表您正在「吸氣」（將播放溫暖管風琴 G 音）</p>
           </div>
           <div class="flex items-start space-x-3 text-left">
             <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">2</span>
-            <p><strong>放開螢幕：</strong> 代表您正在「吐氣」</p>
+            <p><strong>放開螢幕：</strong> 代表您正在「吐氣」（將播放沉靜管風琴 C 音）</p>
           </div>
           <div class="flex items-start space-x-3 text-left">
             <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">3</span>
-            <p>我們將藉此分析您的呼吸頻率、吸吐比與肺通氣效率。</p>
+            <p>引導中的「憋氣」階段將自動靜音，以便您閉上眼睛，在寂靜中與自我的呼吸同頻諧振。</p>
           </div>
         </div>
       </div>
@@ -128,9 +128,15 @@
         </div>
         <span class="font-extrabold text-zen-800 tracking-wider text-base">BreathSensing</span>
       </div>
-      <button id="btn-history" onclick="changeScreen('history')" class="p-2 text-zen-600 hover:bg-zen-50 rounded-lg relative">
-        <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-      </button>
+      <div class="flex items-center space-x-1">
+        <!-- 音效引導開關 -->
+        <button id="btn-sound-toggle" onclick="toggleSound()" class="p-2 text-zen-600 hover:bg-zen-50 rounded-lg relative" title="切換音效引導">
+          <i id="sound-icon" data-lucide="volume-2" class="w-5 h-5"></i>
+        </button>
+        <button id="btn-history" onclick="changeScreen('history')" class="p-2 text-zen-600 hover:bg-zen-50 rounded-lg relative">
+          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
+        </button>
+      </div>
     </header>
 
     <!-- 2. 主功能選擇 (Mode Selection) -->
@@ -138,7 +144,7 @@
       <div class="space-y-6">
         <div class="space-y-1">
           <h3 class="text-xl font-bold text-zen-800">今天，想如何照顧呼吸？</h3>
-          <p class="text-xs text-zen-500">透過溫和的觸控追蹤，發掘您的生理訊號與狀態</p>
+          <p class="text-xs text-zen-500">透過溫和的觸控與音效追蹤，發掘您的生理訊號與狀態</p>
         </div>
 
         <!-- 模式卡片 A -->
@@ -264,7 +270,7 @@
         </button>
       </div>
 
-      <!-- 進度與操作指示欄 (新配置：支持不限時模式下的結束按鈕) -->
+      <!-- 進度與操作指示欄 -->
       <div class="px-6 py-2.5 flex justify-between items-center shrink-0 border-b border-zen-50/50 bg-white">
         <div class="flex flex-col space-y-1">
           <div class="flex space-x-1" id="cycle-dots">
@@ -556,7 +562,8 @@
       currentEmoji: '😄',
       currentSession: null,
       freeMode: 'quick', 
-      targetCycles: 6 
+      targetCycles: 6,
+      soundEnabled: true // 音效預設開啟
     };
 
     // 暫存一組呼吸週期數據
@@ -575,9 +582,117 @@
     let guidedTouchActive = false;
     let guidedCyclesCount = 0;
     let guidedMethodSelected = null;
+    let lastPlayedPhase = null; // 追蹤引導中的上一次發聲相位，避免重複觸發
 
     // 呼吸評估公式設定
     const VD = 150; 
+
+    // --- Web Audio 泛音管風琴合成引擎 (Web Audio Organ Synthesizer Engine) ---
+    let audioCtx = null;
+    let synthOsc = null;
+    let synthGain = null;
+
+    function initAudio() {
+      if (audioCtx) return;
+      // 兼容舊版瀏覽器
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // 播放具有溫暖大教堂管風琴泛音的單音
+    function playOrganNote(frequency) {
+      if (!appState.soundEnabled) return;
+      
+      initAudio();
+      
+      // 確保在瀏覽器安全機制下恢復播放
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
+      // 平滑淡出前一個音
+      stopOrganNote();
+
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+
+      // 泛音合成 (Additive Synthesis)：疊加基頻與 5 個整數倍頻 (泛音群) 營造管風琴的層次感
+      const realHarmonics = new Float32Array([
+        0,    // 直流偏移
+        1.0,  // f0 (基音 - 飽滿溫暖)
+        0.6,  // 2f0 (純八度 - 增添明亮)
+        0.4,  // 3f0 (八度加完全五度 - 豐富色彩)
+        0.3,  // 4f0 (雙八度 - 管風琴尖銳特徵)
+        0.1,  // 5f0 (雙八度加大三度 - 溫潤和弦)
+        0.05  // 6f0 (雙八度加完全五度 - 極微亮光)
+      ]);
+      const imagHarmonics = new Float32Array(realHarmonics.length); // 純弦波(無相位偏角)
+      const organWave = audioCtx.createPeriodicWave(realHarmonics, imagHarmonics);
+      
+      osc.setPeriodicWave(organWave);
+      osc.frequency.value = frequency;
+
+      // 溫和低通濾波器 (Warm Lowpass Filter)：柔化高頻噪聲，呈現古樸與冥想感
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 1000; // 截止頻率 1000Hz 營造圓潤沉靜
+
+      // 振幅包絡 (Envelope)：設計較慢的 Attack 使音效呈漸進微弱膨脹(0.3s)
+      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.3);
+
+      osc.connect(filter);
+      filter.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+
+      osc.start();
+
+      synthOsc = osc;
+      synthGain = gainNode;
+    }
+
+    // 平滑淡出單音，防切音爆音 (Fade-out to prevent clicks)
+    function stopOrganNote() {
+      if (synthOsc && synthGain) {
+        const tempGain = synthGain;
+        const tempOsc = synthOsc;
+        const fadeTime = 0.4; // 溫和淡出時間 0.4s 模擬教堂殘響
+
+        tempGain.gain.setValueAtTime(tempGain.gain.value, audioCtx.currentTime);
+        tempGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + fadeTime);
+
+        setTimeout(() => {
+          try {
+            tempOsc.stop();
+            tempOsc.disconnect();
+            tempGain.disconnect();
+          } catch (e) {}
+        }, fadeTime * 1000);
+
+        synthOsc = null;
+        synthGain = null;
+      }
+    }
+
+    // 切換音效功能
+    function toggleSound() {
+      appState.soundEnabled = !appState.soundEnabled;
+      const soundIcon = document.getElementById('sound-icon');
+      
+      if (appState.soundEnabled) {
+        soundIcon.setAttribute('data-lucide', 'volume-2');
+        showToast('音效引導已開啟 🔊');
+        // 如果當前在按壓，立即恢復聲音
+        if (appState.currentScreen === 'free-assess') {
+          if (currentCycle.status === 'inhaling') playOrganNote(196.00); // G3
+          else if (currentCycle.status === 'exhaling') playOrganNote(130.81); // C3
+        }
+      } else {
+        soundIcon.setAttribute('data-lucide', 'volume-x');
+        stopOrganNote();
+        showToast('音效引導已關閉 🔇');
+      }
+      lucide.createIcons();
+    }
 
     // 初始化載入
     window.onload = function() {
@@ -630,6 +745,7 @@
 
     // --- 1. Gate 處理 ---
     function acceptGate() {
+      initAudio(); // 用戶點擊按鈕，啟動/解鎖音頻上下文
       changeScreen('intro');
     }
     function rejectGate() {
@@ -642,6 +758,7 @@
     }
 
     function exitToSelect() {
+      stopOrganNote(); // 切換頁面時安全關閉音效
       stopGuidedSession();
       resetFreeSession();
       changeScreen('select');
@@ -678,7 +795,6 @@
       document.getElementById('free-mode-banner').innerText = bannerText;
       document.getElementById('cycle-count-text').innerText = modeType === 'unlimited' ? '已收集: 0 次' : `收集進度: 0 / ${cycles} 次循環`;
       
-      // 初始隱藏手動結束按鈕
       document.getElementById('btn-manual-stop').classList.add('hidden');
 
       startFreeAssessment();
@@ -735,6 +851,7 @@
 
     function resetFreeSession() {
       if (canvasAnimFrame) cancelAnimationFrame(canvasAnimFrame);
+      stopOrganNote(); // 清空音效
       appState.breathData = [];
       currentCycle = { startTime: null, inhaleTime: null, exhaleTime: null, status: 'idle' };
       scaleVal = 1;
@@ -762,6 +879,9 @@
       prompt.innerText = '正在吸氣...';
       icon.classList.remove('text-zen-400');
       icon.classList.add('text-zen-600');
+
+      // 🔊 播放送吸氣 G3 音效 (泛音管風琴)
+      playOrganNote(196.00); 
 
       const now = Date.now();
 
@@ -810,6 +930,9 @@
       icon.classList.remove('text-zen-600');
       icon.classList.add('text-zen-400');
 
+      // 🔊 播放送吐氣 C3 音效 (泛音管風琴)
+      playOrganNote(130.81);
+
       if (currentCycle.status === 'inhaling') {
         currentCycle.inhaleTime = Date.now();
         currentCycle.status = 'exhaling';
@@ -828,9 +951,7 @@
       dotsContainer.innerHTML = '';
 
       if (appState.freeMode === 'unlimited') {
-        // 不限時自律覺察：採用 Sliding Window (滾動滑窗) 動態繪製最新 8 個點
         const displayLimit = 8;
-        const totalDots = Math.max(displayLimit, count);
         const startIndex = Math.max(0, count - displayLimit);
 
         for (let i = startIndex; i < startIndex + displayLimit; i++) {
@@ -845,7 +966,6 @@
 
         countText.innerText = `已收集: ${count} 次呼吸`;
 
-        // 至少 3 次 (2次暖身 + 1次穩定) 才允許手動結束
         if (count >= 3) {
           stopBtn.classList.remove('hidden');
         } else {
@@ -853,7 +973,6 @@
         }
 
       } else {
-        // 快速與深度模式：定長固定進度點
         stopBtn.classList.add('hidden');
         for (let i = 0; i < target; i++) {
           const dot = document.createElement('div');
@@ -868,6 +987,7 @@
 
         if (count >= target) {
           setTimeout(() => {
+            stopOrganNote(); // 分析前關閉音效
             showToast('生理數據收集完成，正在為您進行科學演繹...');
             generateReport('free', appState.breathData);
           }, 800);
@@ -876,6 +996,7 @@
     }
 
     function triggerManualStop() {
+      stopOrganNote(); // 結束檢測時安全釋放音效
       showToast('手動覺察結束，正在演算您的呼吸時序軌跡...');
       generateReport('free', appState.breathData);
     }
@@ -1018,6 +1139,7 @@
       guidedCyclesCount = 0;
       appState.breathData = [];
       syncErrorSecs = 0;
+      lastPlayedPhase = null; // 重置聲音相位
 
       setupGuidedTouch();
 
@@ -1066,6 +1188,19 @@
       timerText.innerText = `${guidedPhaseSec}s`;
       cycleText.innerText = `剩餘時間: ${guidedSecLeft} 秒 | 已完成: ${guidedCyclesCount} 次`;
 
+      // 🔊 時序狀態音效引導判定：進入新階段時，自動發起管風琴調色單音
+      if (guidedPhase !== lastPlayedPhase) {
+        lastPlayedPhase = guidedPhase;
+        if (guidedPhase === 'inhale') {
+          playOrganNote(196.00); // 吸氣：G3
+        } else if (guidedPhase === 'exhale') {
+          playOrganNote(130.81); // 吐氣：C3
+        } else {
+          // 憋氣 (hold/hold_post) 階段：漸淡回歸靜寂，符合禪修呼吸空靈感
+          stopOrganNote();
+        }
+      }
+
       outerRing.className = `absolute w-56 h-56 rounded-full border-4 border-dashed transition-all duration-500 ${step.color}`;
 
       outerRing.style.transform = step.phase === 'inhale' ? 'scale(1.2)' : (step.phase === 'exhale' ? 'scale(0.8)' : 'scale(1.0)');
@@ -1081,6 +1216,13 @@
 
     function handleGuidedPress(isPressed) {
       guidedTouchActive = isPressed;
+      
+      // 指尖觸控時，順便重新解鎖/校準 AudioContext 
+      initAudio();
+      if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+
       const pad = document.getElementById('guided-touch-pad');
       if (isPressed) {
         pad.classList.remove('bg-zen-50');
@@ -1112,6 +1254,8 @@
     }
 
     function stopGuidedSession() {
+      stopOrganNote(); // 關閉發聲
+      lastPlayedPhase = null;
       if (guidedTimer) clearInterval(guidedTimer);
       if (guidedAnimFrame) cancelAnimationFrame(guidedAnimFrame);
       document.getElementById('sync-feedback').classList.add('opacity-0');
@@ -1121,7 +1265,8 @@
     // --- 5. 生理病理數據評估引擎與視覺化渲染 ---
     function generateReport(mode, rawData, methodId = null) {
       changeScreen('feedback');
-      
+      stopOrganNote(); // 生成報告時，確保音效停止
+
       let finalRR = 0;
       let finalIE = 1.5;
       let finalVA = 0;
@@ -1137,7 +1282,6 @@
       let stableDataForViz = [];
 
       if (mode === 'free') {
-        // 暖身過濾：一律剔除前 2 次
         const stableData = rawData.slice(2);
         stableDataForViz = stableData; 
         const stableCount = stableData.length;
@@ -1167,7 +1311,6 @@
           }
         }
 
-        // 時序演變分析 (至少需要 2 次穩定數據才能比對)
         if (stableCount >= 2) {
           const rrs = stableData.map(d => d.instant_rr);
           const tis = stableData.map(d => d.ti_seconds);
@@ -1190,7 +1333,6 @@
 
           let modeLabel = appState.freeMode === 'quick' ? '快速模式' : (appState.freeMode === 'deep' ? '深度模式' : '不限時自主模式');
 
-          // (A) 調節趨勢判定
           if (rrDiff < -1.5) {
             trendBadgeText = "漸進放鬆 📉";
             trendBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
@@ -1205,7 +1347,6 @@
             trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您呈現了<strong>「均勻維持」</strong>的特徵：全程呼吸頻率起伏極微（變動率 < 1.5 BPM），顯示您的呼吸神經反饋極為平穩，中樞呼吸發生器釋放的訊號非常均勻。`;
           }
 
-          // (B) 穩定度判定
           if (rrStdDev > 2.5 || tiStdDev > 0.5) {
             stabilityBadgeText = "波動劇烈 ⚠️";
             stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
@@ -1216,7 +1357,6 @@
             trajectoryInterpretation += `<br><br>在波動性上，您的節律展現出<strong>「高度規律與對稱」</strong>。每一次呼吸循環的時序長度與觸壓深度變異極小。這反映出您的心肺耦合度極高，大腦皮質主動干擾極低，是高度專注、安定和諧的神經反饋。`;
           }
 
-          // (C) 「不限時模式」專屬深度特徵挖掘（累積 4 次有效以上解鎖）
           if (appState.freeMode === 'unlimited' && stableCount >= 4) {
             const maxTtot = Math.max(...ttots);
             const maxIdx = ttots.indexOf(maxTtot) + 1;
@@ -1236,7 +1376,6 @@
         }
 
       } else {
-        // 引導練習完成報告
         const config = guidedMethods[methodId];
         const totalPracticeSecs = 60;
         const syncPercent = Math.max(0, Math.round(((totalPracticeSecs - syncErrorSecs) / totalPracticeSecs) * 100));
@@ -1297,7 +1436,6 @@
       renderFeedbackSpirogramChart(mode, stableDataForViz, methodId);
       renderFeedbackBreathBars(mode, stableDataForViz, methodId);
 
-      // 動態刷新動態注入的圖示
       lucide.createIcons();
 
       appState.currentSession = {
