@@ -141,7 +141,7 @@
           <p class="text-xs text-zen-500">透過溫和的觸控追蹤，發掘您的生理訊號與狀態</p>
         </div>
 
-        <!-- 模式卡片 A (改為觸發底層彈窗) -->
+        <!-- 模式卡片 A -->
         <div onclick="openFreeModeModal()" class="group bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex items-start space-x-4 active:scale-98">
           <div class="p-3.5 bg-emerald-50 rounded-xl text-emerald-600 group-hover:bg-emerald-100 transition-colors">
             <i data-lucide="activity" class="w-6 h-6"></i>
@@ -181,7 +181,6 @@
 
     <!-- 自由檢測「快速 vs 深度」選擇面板 (Modal Drawer) -->
     <div id="free-mode-modal" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center transition-all duration-300 pointer-events-none opacity-0">
-      <!-- 點擊背景關閉 -->
       <div class="absolute inset-0" onclick="closeFreeModeModal()"></div>
       
       <div class="w-full max-w-md bg-white rounded-t-3xl p-6 space-y-6 transform translate-y-full transition-transform duration-300 z-10">
@@ -421,7 +420,23 @@
             </div>
           </div>
 
-          <!-- 新增：單次呼吸動態軌跡分析 (Trajectory Analysis) -->
+          <!-- 新增：單次呼吸吸吐時序與波形視覺化 (Spirogram & Timing Visualization) -->
+          <div class="p-3.5 bg-white rounded-xl border border-zen-100 space-y-3 shadow-sm">
+            <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
+              <i data-lucide="waves" class="w-4 h-4 text-zen-500"></i>
+              <span class="tracking-wide">肺部通氣模擬與吸吐時序軌跡</span>
+            </span>
+            <!-- 肺通氣模擬曲線 -->
+            <div class="h-32 w-full relative">
+              <canvas id="feedbackSpirogramChart"></canvas>
+            </div>
+            <!-- 每一次呼吸比例時序條 -->
+            <div class="space-y-2 pt-1" id="feedback-breath-bars">
+              <!-- 動態生成每一口氣的吸吐比例條 -->
+            </div>
+          </div>
+
+          <!-- 每個呼吸動態演變 -->
           <div class="p-3.5 bg-white rounded-xl border border-zen-100 space-y-3">
             <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
               <i data-lucide="trending-up" class="w-4 h-4 text-zen-accent"></i>
@@ -452,7 +467,6 @@
         <div class="space-y-4 border-t border-zen-100 pt-4">
           <div class="space-y-2">
             <label class="text-sm font-bold text-zen-800">你當下的主觀感受是？</label>
-            <!-- 心情 Emoji 選擇 -->
             <div class="grid grid-cols-4 gap-2">
               <button onclick="selectEmoji('😄', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">😄<span class="block text-[10px] mt-0.5 text-zen-500">放鬆</span></button>
               <button onclick="selectEmoji('😐', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">😐<span class="block text-[10px] mt-0.5 text-zen-500">平常</span></button>
@@ -501,7 +515,6 @@
           </div>
 
           <div class="space-y-2.5 max-h-[22rem] overflow-y-auto custom-scroll" id="history-list">
-            <!-- 動態生成紀錄項目 -->
             <div class="text-center py-8 text-xs text-zen-400">尚未累積任何練習紀錄</div>
           </div>
         </div>
@@ -514,34 +527,34 @@
     // --- 狀態宣告 ---
     let appState = {
       isLoggedIn: false,
-      currentScreen: 'gate', // gate, intro, select, free-assess, guided-select, guided-active, feedback, history
-      breathData: [], // 每次呼吸紀錄
+      currentScreen: 'gate', 
+      breathData: [], 
       history: [],
       currentEmoji: '😄',
       currentSession: null,
-      freeMode: 'quick', // quick, deep
-      targetCycles: 6 // 6 (快速) 或 10 (深度)
+      freeMode: 'quick', 
+      targetCycles: 6 
     };
 
     // 暫存一組呼吸週期數據
     let currentCycle = {
       startTime: null,
-      inhaleTime: null, // PointerUp
-      exhaleTime: null, // Next PointerDown
-      status: 'idle' // idle, inhaling, exhaling
+      inhaleTime: null, 
+      exhaleTime: null, 
+      status: 'idle' 
     };
 
     // 引導計時器變數
     let guidedTimer = null;
     let guidedSecLeft = 60;
-    let guidedPhase = 'inhale'; // inhale, hold, exhale, hold_post
+    let guidedPhase = 'inhale'; 
     let guidedPhaseSec = 0;
     let guidedTouchActive = false;
     let guidedCyclesCount = 0;
     let guidedMethodSelected = null;
 
     // 呼吸評估公式設定
-    const VD = 150; // 死腔預設值 150ml
+    const VD = 150; 
 
     // 初始化載入
     window.onload = function() {
@@ -566,7 +579,6 @@
 
     // --- Screen 切換 ---
     function changeScreen(screenId) {
-      // 隱藏所有
       ['screen-gate', 'screen-intro', 'screen-select', 'screen-free-assess', 'screen-guided-select', 'screen-guided-active', 'screen-feedback', 'screen-history'].forEach(id => {
         document.getElementById(id).classList.add('hidden');
       });
@@ -636,7 +648,6 @@
       appState.targetCycles = cycles;
       closeFreeModeModal();
       
-      // 更新檢測標題與總進度提示
       document.getElementById('free-mode-banner').innerText = modeType === 'quick' ? '自由監測（快速覺察）' : '自由監測（深度評估）';
       document.getElementById('cycle-count-text').innerText = `收集進度: 0 / ${cycles} 次循環`;
       
@@ -741,7 +752,6 @@
             ie_ratio: parseFloat(ie.toFixed(2))
           });
 
-          // 提示前兩次為暖身，第三次起即時反饋
           if (appState.breathData.length <= 2) {
             showToast(`適應期適調中 (第 ${appState.breathData.length} 次暖身)`);
           }
@@ -787,7 +797,6 @@
       dotsContainer.innerHTML = '';
       for (let i = 0; i < target; i++) {
         const dot = document.createElement('div');
-        // 前2個圓點給予黃色（表示暖身期），後面為綠色/常態
         let activeClass = 'bg-emerald-500 scale-110';
         if (i < 2) {
           activeClass = 'bg-amber-400 scale-110';
@@ -821,7 +830,6 @@
         const computedHeight = Math.max(minHeight, (percent / 100) * maxHeight);
 
         const bar = document.createElement('div');
-        // 暖身的前兩次呼吸顯示為土黃色
         const barColor = idx < 2 ? "bg-amber-400/80 hover:bg-amber-500" : "bg-zen-500/80 hover:bg-zen-accent";
         bar.className = `w-full ${barColor} rounded-t-sm transition-all duration-500 relative`;
         bar.style.height = `${computedHeight}%`;
@@ -1045,7 +1053,7 @@
     }
 
 
-    // --- 5. 生理病理數據評估引擎 (Physiological Diagnostic Engine) ---
+    // --- 5. 生理病理數據評估引擎與視覺化渲染 ---
     function generateReport(mode, rawData, methodId = null) {
       changeScreen('feedback');
       
@@ -1061,9 +1069,11 @@
       let stabilityBadgeText = "";
       let stabilityBadgeClass = "";
 
+      let stableDataForViz = [];
+
       if (mode === 'free') {
-        // 【1. 暖身過濾機制】：剔除前 2 次適應期數據，利用其餘穩定周期進行深度運算
         const stableData = rawData.slice(2);
+        stableDataForViz = stableData; // 保留給視覺化使用
         const stableCount = stableData.length;
 
         const avgRR = stableData.reduce((acc, curr) => acc + curr.instant_rr, 0) / stableCount;
@@ -1072,16 +1082,13 @@
         finalRR = parseFloat(avgRR.toFixed(1));
         finalIE = parseFloat(avgIE.toFixed(2));
 
-        // 估算潮氣量 (VT)
         const avgTi = stableData.reduce((acc, curr) => acc + curr.ti_seconds, 0) / stableCount;
         const estVT = Math.min(Math.max(150 + (avgTi * 150), 300), 800); 
 
-        // 肺泡換氣量：VA = RR * (VT - VD)
         const estVA = (finalRR * (estVT - VD)) / 1000; 
         finalVA = parseFloat(estVA.toFixed(1));
         vdRatio = Math.round((VD / estVT) * 100);
 
-        // 【2. 生理病理學機轉解讀】
         if (finalRR > 20) {
           interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的靜息頻率高達 ${finalRR} 次/分，死腔通氣損耗比重達 ${vdRatio}%。雖然單分鐘通氣量（$VE$）看似足夠，但因為呼吸過淺，導致真正能參與肺泡氣體交換的有效肺泡換氣量（$VA$）僅約 ${finalVA} L/min。這在臨床上會增加呼吸肌做功負荷。建議多練習<strong>「同頻諧振呼吸法」</strong>，刻意放慢速度，拉長單次吸氣深度。`;
         } else if (finalIE < 0.5) { 
@@ -1092,14 +1099,10 @@
           interpretation = `<strong>【常態節律：身心穩定】</strong><br>您目前的呼吸型態大致平穩（BPM: ${finalRR}），自律神經與肺部氣體交換均處於常規代償軌跡。建議每日定時進行 3 分鐘<strong>「同頻諧振呼吸法」</strong>，維持呼吸器官的柔韌性與反射時間常數。`;
         }
 
-        // 【3. 時序軌跡與不規律度分析】 (Trajectory & Volatility)
-        // 快速模式 (6次呼吸) 前2次暖身，第3~4次 vs 第5~6次
-        // 深度模式 (10次呼吸) 前2次暖身，第3~6次 vs 第7~10次
         if (rawData.length >= 4) {
           const rrs = stableData.map(d => d.instant_rr);
           const tis = stableData.map(d => d.ti_seconds);
 
-          // 計算前半段 vs 後半段 頻率差
           const mid = Math.floor(stableCount / 2);
           const firstHalf = rrs.slice(0, mid);
           const secondHalf = rrs.slice(mid);
@@ -1107,7 +1110,6 @@
           const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
           const rrDiff = avgSecond - avgFirst;
 
-          // 計算呼吸速率與深度(吸氣時間)標準差
           const meanRR = rrs.reduce((a, b) => a + b, 0) / stableCount;
           const variance = rrs.reduce((a, b) => a + Math.pow(b - meanRR, 2), 0) / stableCount;
           const rrStdDev = Math.sqrt(variance);
@@ -1116,10 +1118,8 @@
           const tiVariance = tis.reduce((a, b) => a + Math.pow(b - meanTi, 2), 0) / stableCount;
           const tiStdDev = Math.sqrt(tiVariance);
 
-          // 評估模式標記
           const modeLabel = appState.freeMode === 'quick' ? '快速模式' : '深度模式';
 
-          // (A) 調節趨勢判定
           if (rrDiff < -1.5) {
             trendBadgeText = "漸進放鬆 📉";
             trendBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
@@ -1134,7 +1134,6 @@
             trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您呈現了<strong>「均勻維持」</strong>的特徵：全程呼吸頻率起伏極微（變動率 < 1.5 BPM），顯示您的呼吸神經反饋極為平穩，中樞呼吸發生器釋放的訊號非常均勻。`;
           }
 
-          // (B) 穩定度判定
           if (rrStdDev > 2.5 || tiStdDev > 0.5) {
             stabilityBadgeText = "波動劇烈 ⚠️";
             stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
@@ -1153,7 +1152,6 @@
         }
 
       } else {
-        // 引導練習完成報告
         const config = guidedMethods[methodId];
         const totalPracticeSecs = 60;
         const syncPercent = Math.max(0, Math.round(((totalPracticeSecs - syncErrorSecs) / totalPracticeSecs) * 100));
@@ -1170,7 +1168,7 @@
           finalVA = 4.5;
           vdRatio = 23;
           interpretation = `<strong>【箱型減壓：完成引導】</strong><br>您已成功跟隨完成箱型呼吸法。這種等長 (4s) 的四階段循環，能阻斷因緊急狀況產生的急性交感風暴，均衡體內酸鹼 pH 值。本法推薦在重要演講、高壓決策前使用，能使大腦保持不缺氧的極限冷靜。`;
-        } else { // coherent
+        } else { 
           finalRR = 6.0;
           finalIE = 1.0;
           finalVA = 5.1;
@@ -1195,7 +1193,7 @@
         }
       }
 
-      // 渲染至報告
+      // --- 渲染數據至報告頁面 ---
       document.getElementById('result-rr').innerHTML = `${finalRR} <span class="text-xs font-normal">BPM</span>`;
       document.getElementById('result-ie').innerText = `1:${(1/finalIE).toFixed(1)}`;
       document.getElementById('result-va').innerHTML = `${finalVA} <span class="text-xs font-normal">L/m</span>`;
@@ -1210,6 +1208,13 @@
       bStability.innerText = stabilityBadgeText;
       bStability.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${stabilityBadgeClass}`;
 
+      // --- 執行全新：單次呼吸吸吐時序與波形視覺化 ---
+      renderFeedbackSpirogramChart(mode, stableDataForViz, methodId);
+      renderFeedbackBreathBars(mode, stableDataForViz, methodId);
+
+      // 動態刷新動態注入的圖示
+      lucide.createIcons();
+
       appState.currentSession = {
         id: Date.now(),
         date: new Date().toLocaleDateString('zh-TW', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}),
@@ -1222,6 +1227,219 @@
       };
 
       resetEmojiButtons();
+    }
+
+    // 實作肺通氣量曲線模擬 (Synthetic Spirogram Curve)
+    function renderFeedbackSpirogramChart(mode, stableData, methodId) {
+      const canvas = document.getElementById('feedbackSpirogramChart');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      
+      if (window.feedbackChartInstance) {
+        window.feedbackChartInstance.destroy();
+      }
+
+      let elapsed = 0;
+      const labels = [0];
+      const dataPoints = [0];
+
+      if (mode === 'free') {
+        // 自發呼吸：依據實際單口秒數生成升降波
+        stableData.forEach((b) => {
+          // 吸氣：肺通氣量上升至頂點 (依據 Ti 秒數微調肺容量深淺感)
+          const peakVolume = Math.min(100, 35 + b.ti_seconds * 15);
+          elapsed += b.ti_seconds;
+          labels.push(parseFloat(elapsed.toFixed(1)));
+          dataPoints.push(peakVolume);
+
+          // 吐氣：通氣量回落至基底
+          elapsed += b.te_seconds;
+          labels.push(parseFloat(elapsed.toFixed(1)));
+          dataPoints.push(5); // 保留 5% 作為殘氣容積(RV)美學流暢度
+        });
+      } else {
+        // 引導練習：模擬 3 個理想循環的波形 (包含憋氣高原)
+        const cycles = 3;
+        if (methodId === '478') {
+          for (let i = 0; i < cycles; i++) {
+            // 吸 4 秒
+            elapsed += 4;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(90);
+            // 憋 7 秒 ( Plateaus / 頂端高原 )
+            elapsed += 7;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(90);
+            // 吐 8 秒
+            elapsed += 8;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(5);
+          }
+        } else if (methodId === 'box') {
+          for (let i = 0; i < cycles; i++) {
+            // 吸 4 秒
+            elapsed += 4;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(90);
+            // 憋 4 秒 ( 頂端高原 )
+            elapsed += 4;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(90);
+            // 吐 4 秒
+            elapsed += 4;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(5);
+            // 憋 4 秒 ( 底端高原 )
+            elapsed += 4;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(5);
+          }
+        } else { // coherent (5-5)
+          for (let i = 0; i < cycles; i++) {
+            // 吸 5 秒
+            elapsed += 5;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(90);
+            // 吐 5 秒
+            elapsed += 5;
+            labels.push(parseFloat(elapsed.toFixed(1)));
+            dataPoints.push(5);
+          }
+        }
+      }
+
+      window.feedbackChartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '模擬肺通氣量 (Simulated Lung Volume %)',
+            data: dataPoints,
+            borderColor: '#6E755D', 
+            backgroundColor: 'rgba(110, 117, 93, 0.12)',
+            borderWidth: 2,
+            tension: 0.45, // 平滑正弦狀臨床呼吸波形
+            fill: true,
+            pointRadius: 0, // 隱藏數據點，僅呈現連續流暢波形
+            pointHoverRadius: 4,
+            pointBackgroundColor: '#C2A687'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return `時間: ${context.label}s | 模擬肺容量: ${Math.round(context.raw)}%`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 0,
+              max: 110,
+              display: false 
+            },
+            x: {
+              title: {
+                display: true,
+                text: '累積時間軌跡 (秒)',
+                font: { size: 9, weight: 'bold' },
+                color: '#8E947A'
+              },
+              grid: { display: false },
+              ticks: { font: { size: 8 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 實作分段呼吸比例條 (Breath Stacked Duration Bars)
+    function renderFeedbackBreathBars(mode, stableData, methodId) {
+      const container = document.getElementById('feedback-breath-bars');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (mode === 'free') {
+        stableData.forEach((b, idx) => {
+          const row = document.createElement('div');
+          row.className = "text-[10px] space-y-1 p-2 bg-zen-50/40 rounded-xl border border-zen-100/50";
+
+          const info = document.createElement('div');
+          info.className = "flex justify-between font-bold text-zen-700";
+          info.innerHTML = `
+            <span>呼吸週期 #${idx + 1} (BPM: ${Math.round(b.instant_rr)})</span>
+            <span class="text-zen-500">I:E 吸吐比 = 1 : ${(1/b.ie_ratio).toFixed(1)}</span>
+          `;
+
+          const barContainer = document.createElement('div');
+          barContainer.className = "w-full h-4 bg-zen-100 rounded-lg overflow-hidden flex text-[8px] font-bold text-white text-center font-mono";
+
+          const inhaleWidth = (b.ti_seconds / b.ttot_seconds) * 100;
+          const exhaleWidth = (b.te_seconds / b.ttot_seconds) * 100;
+
+          const inhaleBar = document.createElement('div');
+          inhaleBar.className = "bg-zen-500 flex items-center justify-center transition-all duration-500";
+          inhaleBar.style.width = `${inhaleWidth}%`;
+          inhaleBar.innerText = `吸 ${b.ti_seconds}s`;
+
+          const exhaleBar = document.createElement('div');
+          exhaleBar.className = "bg-zen-accent flex items-center justify-center text-zen-900 transition-all duration-500";
+          exhaleBar.style.width = `${exhaleWidth}%`;
+          exhaleBar.innerText = `吐 ${b.te_seconds}s`;
+
+          barContainer.appendChild(inhaleBar);
+          barContainer.appendChild(exhaleBar);
+
+          row.appendChild(info);
+          row.appendChild(barContainer);
+          container.appendChild(row);
+        });
+      } else {
+        const config = guidedMethods[methodId];
+        const row = document.createElement('div');
+        row.className = "text-[10px] space-y-1.5 p-2 bg-zen-50/40 rounded-xl border border-zen-100/50";
+
+        const info = document.createElement('div');
+        info.className = "flex justify-between font-bold text-zen-700";
+        info.innerHTML = `
+          <span>引導功法標準循環分配</span>
+          <span class="text-zen-accent font-extrabold">${config.title.split(' ')[0]}</span>
+        `;
+
+        const barContainer = document.createElement('div');
+        barContainer.className = "w-full h-4 bg-zen-100 rounded-lg overflow-hidden flex text-[8px] font-bold text-white text-center font-mono";
+
+        const totalSec = config.timeline.reduce((acc, t) => acc + t.sec, 0);
+
+        config.timeline.forEach(step => {
+          const stepWidth = (step.sec / totalSec) * 100;
+          const stepBar = document.createElement('div');
+          
+          let stepBg = "bg-slate-400";
+          let stepText = "text-white";
+          let phaseName = "";
+          if (step.phase === 'inhale') { stepBg = "bg-zen-500"; phaseName = "吸"; }
+          if (step.phase === 'hold') { stepBg = "bg-amber-400"; stepText = "text-zen-900"; phaseName = "憋"; }
+          if (step.phase === 'exhale') { stepBg = "bg-zen-accent"; stepText = "text-zen-900"; phaseName = "吐"; }
+          if (step.phase === 'hold_post') { stepBg = "bg-slate-300"; stepText = "text-zen-800"; phaseName = "憋"; }
+
+          stepBar.className = `${stepBg} ${stepText} flex items-center justify-center transition-all duration-500`;
+          stepBar.style.width = `${stepWidth}%`;
+          stepBar.innerText = `${phaseName} ${step.sec}s`;
+
+          barContainer.appendChild(stepBar);
+        });
+
+        row.appendChild(info);
+        row.appendChild(barContainer);
+        container.appendChild(row);
+      }
     }
 
     function selectEmoji(emoji, btn) {
