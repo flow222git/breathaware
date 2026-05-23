@@ -243,7 +243,7 @@
                 <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">手動結束</span>
               </div>
               <p class="text-[10px] text-zen-500 mt-1 leading-relaxed">
-                不限時間與次數。<strong>前 2 次暖身過濾</strong>，適合長程冥想靜心。完成 3 次起，點擊「結束並分析」即可獲取精密報告。
+                不限時間與次數。<strong>前 2 次暖身過濾</strong>，適合長程靜心。完成 3 次起，點擊「結束並分析」即可獲取多維時序報告。
               </p>
             </div>
           </div>
@@ -391,10 +391,10 @@
 
         <!-- 導引環本體 -->
         <div class="relative w-64 h-64 flex items-center justify-center">
-          <!-- 系統引導外環 (動態縮放) -->
+          <!-- 系統引導外環 -->
           <div id="guide-ring-outer" class="absolute w-56 h-56 rounded-full border-4 border-dashed border-zen-accent/60 transition-transform duration-300"></div>
           
-          <!-- 系統即時提示內環 (縮放核心) -->
+          <!-- 系統即時提示內環 -->
           <div id="guide-ring-inner" class="absolute w-40 h-40 rounded-full bg-zen-100 flex flex-col justify-center items-center text-center transition-all duration-300 shadow-md">
             <span id="guide-state-text" class="text-lg font-black text-zen-700">準備開始</span>
             <span id="guide-timer-text" class="text-2xl font-mono font-bold text-zen-600 mt-1">--</span>
@@ -421,11 +421,29 @@
 
     <!-- 6. 主觀感受與報告記錄 (Feedback & Log) -->
     <section id="screen-feedback" class="absolute inset-0 top-16 bg-white z-20 flex flex-col justify-between p-6 overflow-y-auto custom-scroll hidden">
-      <div class="space-y-6">
+      <div class="space-y-6 pb-6">
         <div class="text-center space-y-2">
           <span class="text-zen-accent font-bold text-xs uppercase tracking-widest">練習完成報告</span>
           <h3 class="text-2xl font-black text-zen-800">生理狀態與分析成果</h3>
           <p class="text-xs text-zen-500">依據自發/引導呼吸之客觀指標演算</p>
+        </div>
+
+        <!-- 【全新升級】身心呼吸表型大勳章 (Medal Card Drawer) -->
+        <div id="phenotype-medal-card" class="bg-gradient-to-br from-zen-800 to-zen-900 rounded-2xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden border border-zen-700">
+          <!-- 裝飾背景星光 -->
+          <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-zen-accent/10 rounded-full blur-2xl"></div>
+          <div class="flex items-center space-x-4">
+            <div id="phenotype-medal-icon" class="w-14 h-14 bg-zen-700 rounded-full flex items-center justify-center border-2 border-zen-accent text-3xl shadow-inner shrink-0">
+              🏆
+            </div>
+            <div class="min-w-0 flex-1">
+              <span class="text-[10px] text-zen-300 tracking-widest uppercase font-bold block">評估身心呼吸表型</span>
+              <h4 id="phenotype-title" class="text-base font-extrabold text-zen-accent truncate">禪定諧振流</h4>
+            </div>
+          </div>
+          <p id="phenotype-long-desc" class="text-xs text-zen-300 leading-relaxed border-t border-zen-700/60 pt-3">
+            身心分析載入中...
+          </p>
         </div>
 
         <!-- 生理數據圖表卡片 -->
@@ -449,18 +467,38 @@
             </div>
           </div>
 
-          <!-- 新增：單次呼吸吸吐時序與波形視覺化 (Spirogram & Timing Visualization) -->
-          <div class="p-3.5 bg-white rounded-xl border border-zen-100 space-y-3 shadow-sm">
+          <!-- 【全新升級】肺通氣量曲線模擬與吸吐時間分期軸 (Spirogram & Timeline Tag Axis) -->
+          <div class="p-4 bg-white rounded-xl border border-zen-100 space-y-4 shadow-sm">
             <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
               <i data-lucide="waves" class="w-4 h-4 text-zen-500"></i>
-              <span class="tracking-wide">肺部通氣模擬與吸吐時序軌跡</span>
+              <span class="tracking-wide">肺部通氣模擬與時序分期軸</span>
             </span>
             <!-- 肺通氣模擬曲線 -->
             <div class="h-32 w-full relative">
               <canvas id="feedbackSpirogramChart"></canvas>
             </div>
+
+            <!-- 【新增】時間分期水平軌跡軸 (Timeline Tag Axis) -->
+            <div class="space-y-1.5 border-t border-zen-50 pt-3">
+              <span class="text-[9px] font-bold text-zen-500 tracking-wider uppercase block">整段呼吸練習動態切片 (分期標籤)</span>
+              <div class="flex items-stretch bg-zen-50 h-9 rounded-lg overflow-hidden border border-zen-100 text-[10px] font-bold text-center">
+                <div class="flex-1 bg-amber-100/60 border-r border-zen-100 flex flex-col justify-center text-amber-950 p-1">
+                  <span class="block text-[8px] text-amber-700/80 font-normal">1. 暖身適應</span>
+                  <span class="truncate">熱身對齊</span>
+                </div>
+                <div class="flex-[3] bg-emerald-50 border-r border-zen-100 flex flex-col justify-center text-emerald-950 p-1">
+                  <span class="block text-[8px] text-emerald-700/80 font-normal">2. 核心調諧</span>
+                  <span id="timeline-stage-mid" class="truncate">自主諧振</span>
+                </div>
+                <div class="flex-[2] bg-indigo-50 flex flex-col justify-center text-indigo-950 p-1">
+                  <span class="block text-[8px] text-indigo-700/80 font-normal">3. 沉澱統合</span>
+                  <span id="timeline-stage-late" class="truncate">深度入定</span>
+                </div>
+              </div>
+            </div>
+
             <!-- 每一次呼吸比例時序條 -->
-            <div class="space-y-2 pt-1 max-h-60 overflow-y-auto custom-scroll" id="feedback-breath-bars">
+            <div class="space-y-2 pt-2 border-t border-zen-50" id="feedback-breath-bars">
               <!-- 動態生成每一口氣的吸吐比例條 -->
             </div>
           </div>
@@ -563,7 +601,7 @@
       currentSession: null,
       freeMode: 'quick', 
       targetCycles: 6,
-      soundEnabled: true // 音效預設開啟
+      soundEnabled: true 
     };
 
     // 暫存一組呼吸週期數據
@@ -582,61 +620,54 @@
     let guidedTouchActive = false;
     let guidedCyclesCount = 0;
     let guidedMethodSelected = null;
-    let lastPlayedPhase = null; // 追蹤引導中的上一次發聲相位，避免重複觸發
+    let lastPlayedPhase = null; 
 
     // 呼吸評估公式設定
     const VD = 150; 
 
-    // --- Web Audio 泛音管風琴合成引擎 (Web Audio Organ Synthesizer Engine) ---
+    // --- Web Audio 泛音管風琴合成引擎 ---
     let audioCtx = null;
     let synthOsc = null;
     let synthGain = null;
 
     function initAudio() {
       if (audioCtx) return;
-      // 兼容舊版瀏覽器
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
 
-    // 播放具有溫暖大教堂管風琴泛音的單音
     function playOrganNote(frequency) {
       if (!appState.soundEnabled) return;
       
       initAudio();
       
-      // 確保在瀏覽器安全機制下恢復播放
       if (audioCtx.state === 'suspended') {
         audioCtx.resume();
       }
 
-      // 平滑淡出前一個音
       stopOrganNote();
 
       const osc = audioCtx.createOscillator();
       const gainNode = audioCtx.createGain();
 
-      // 泛音合成 (Additive Synthesis)：疊加基頻與 5 個整數倍頻 (泛音群) 營造管風琴的層次感
       const realHarmonics = new Float32Array([
-        0,    // 直流偏移
-        1.0,  // f0 (基音 - 飽滿溫暖)
-        0.6,  // 2f0 (純八度 - 增添明亮)
-        0.4,  // 3f0 (八度加完全五度 - 豐富色彩)
-        0.3,  // 4f0 (雙八度 - 管風琴尖銳特徵)
-        0.1,  // 5f0 (雙八度加大三度 - 溫潤和弦)
-        0.05  // 6f0 (雙八度加完全五度 - 極微亮光)
+        0,    
+        1.0,  // f0 (基音)
+        0.6,  // 2f0 (純八度)
+        0.4,  // 3f0 (五度)
+        0.3,  // 4f0 (雙八度)
+        0.1,  // 5f0
+        0.05  
       ]);
-      const imagHarmonics = new Float32Array(realHarmonics.length); // 純弦波(無相位偏角)
+      const imagHarmonics = new Float32Array(realHarmonics.length); 
       const organWave = audioCtx.createPeriodicWave(realHarmonics, imagHarmonics);
       
       osc.setPeriodicWave(organWave);
       osc.frequency.value = frequency;
 
-      // 溫和低通濾波器 (Warm Lowpass Filter)：柔化高頻噪聲，呈現古樸與冥想感
       const filter = audioCtx.createBiquadFilter();
       filter.type = 'lowpass';
-      filter.frequency.value = 1000; // 截止頻率 1000Hz 營造圓潤沉靜
+      filter.frequency.value = 1000; 
 
-      // 振幅包絡 (Envelope)：設計較慢的 Attack 使音效呈漸進微弱膨脹(0.3s)
       gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
       gainNode.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.3);
 
@@ -650,12 +681,11 @@
       synthGain = gainNode;
     }
 
-    // 平滑淡出單音，防切音爆音 (Fade-out to prevent clicks)
     function stopOrganNote() {
       if (synthOsc && synthGain) {
         const tempGain = synthGain;
         const tempOsc = synthOsc;
-        const fadeTime = 0.4; // 溫和淡出時間 0.4s 模擬教堂殘響
+        const fadeTime = 0.4; 
 
         tempGain.gain.setValueAtTime(tempGain.gain.value, audioCtx.currentTime);
         tempGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + fadeTime);
@@ -673,7 +703,6 @@
       }
     }
 
-    // 切換音效功能
     function toggleSound() {
       appState.soundEnabled = !appState.soundEnabled;
       const soundIcon = document.getElementById('sound-icon');
@@ -681,10 +710,9 @@
       if (appState.soundEnabled) {
         soundIcon.setAttribute('data-lucide', 'volume-2');
         showToast('音效引導已開啟 🔊');
-        // 如果當前在按壓，立即恢復聲音
         if (appState.currentScreen === 'free-assess') {
-          if (currentCycle.status === 'inhaling') playOrganNote(196.00); // G3
-          else if (currentCycle.status === 'exhaling') playOrganNote(130.81); // C3
+          if (currentCycle.status === 'inhaling') playOrganNote(196.00); 
+          else if (currentCycle.status === 'exhaling') playOrganNote(130.81); 
         }
       } else {
         soundIcon.setAttribute('data-lucide', 'volume-x');
@@ -692,27 +720,6 @@
         showToast('音效引導已關閉 🔇');
       }
       lucide.createIcons();
-    }
-
-    // 初始化載入
-    window.onload = function() {
-      lucide.createIcons();
-      loadHistoryFromLocal();
-      initFreeBreathCanvas();
-      initGuidedCanvas();
-    };
-
-    // --- Toast 提示 ---
-    function showToast(text) {
-      const toast = document.getElementById('toast');
-      const toastText = document.getElementById('toast-text');
-      toastText.innerText = text;
-      toast.classList.remove('opacity-0');
-      toast.classList.add('opacity-100');
-      setTimeout(() => {
-        toast.classList.remove('opacity-100');
-        toast.classList.add('opacity-0');
-      }, 2500);
     }
 
     // --- Screen 切換 ---
@@ -745,7 +752,7 @@
 
     // --- 1. Gate 處理 ---
     function acceptGate() {
-      initAudio(); // 用戶點擊按鈕，啟動/解鎖音頻上下文
+      initAudio(); 
       changeScreen('intro');
     }
     function rejectGate() {
@@ -758,7 +765,7 @@
     }
 
     function exitToSelect() {
-      stopOrganNote(); // 切換頁面時安全關閉音效
+      stopOrganNote(); 
       stopGuidedSession();
       resetFreeSession();
       changeScreen('select');
@@ -851,7 +858,7 @@
 
     function resetFreeSession() {
       if (canvasAnimFrame) cancelAnimationFrame(canvasAnimFrame);
-      stopOrganNote(); // 清空音效
+      stopOrganNote(); 
       appState.breathData = [];
       currentCycle = { startTime: null, inhaleTime: null, exhaleTime: null, status: 'idle' };
       scaleVal = 1;
@@ -880,7 +887,6 @@
       icon.classList.remove('text-zen-400');
       icon.classList.add('text-zen-600');
 
-      // 🔊 播放送吸氣 G3 音效 (泛音管風琴)
       playOrganNote(196.00); 
 
       const now = Date.now();
@@ -930,7 +936,6 @@
       icon.classList.remove('text-zen-600');
       icon.classList.add('text-zen-400');
 
-      // 🔊 播放送吐氣 C3 音效 (泛音管風琴)
       playOrganNote(130.81);
 
       if (currentCycle.status === 'inhaling') {
@@ -987,7 +992,7 @@
 
         if (count >= target) {
           setTimeout(() => {
-            stopOrganNote(); // 分析前關閉音效
+            stopOrganNote(); 
             showToast('生理數據收集完成，正在為您進行科學演繹...');
             generateReport('free', appState.breathData);
           }, 800);
@@ -996,7 +1001,7 @@
     }
 
     function triggerManualStop() {
-      stopOrganNote(); // 結束檢測時安全釋放音效
+      stopOrganNote(); 
       showToast('手動覺察結束，正在演算您的呼吸時序軌跡...');
       generateReport('free', appState.breathData);
     }
@@ -1139,7 +1144,7 @@
       guidedCyclesCount = 0;
       appState.breathData = [];
       syncErrorSecs = 0;
-      lastPlayedPhase = null; // 重置聲音相位
+      lastPlayedPhase = null; 
 
       setupGuidedTouch();
 
@@ -1188,15 +1193,13 @@
       timerText.innerText = `${guidedPhaseSec}s`;
       cycleText.innerText = `剩餘時間: ${guidedSecLeft} 秒 | 已完成: ${guidedCyclesCount} 次`;
 
-      // 🔊 時序狀態音效引導判定：進入新階段時，自動發起管風琴調色單音
       if (guidedPhase !== lastPlayedPhase) {
         lastPlayedPhase = guidedPhase;
         if (guidedPhase === 'inhale') {
-          playOrganNote(196.00); // 吸氣：G3
+          playOrganNote(196.00); 
         } else if (guidedPhase === 'exhale') {
-          playOrganNote(130.81); // 吐氣：C3
+          playOrganNote(130.81); 
         } else {
-          // 憋氣 (hold/hold_post) 階段：漸淡回歸靜寂，符合禪修呼吸空靈感
           stopOrganNote();
         }
       }
@@ -1217,7 +1220,6 @@
     function handleGuidedPress(isPressed) {
       guidedTouchActive = isPressed;
       
-      // 指尖觸控時，順便重新解鎖/校準 AudioContext 
       initAudio();
       if (audioCtx && audioCtx.state === 'suspended') {
         audioCtx.resume();
@@ -1254,18 +1256,39 @@
     }
 
     function stopGuidedSession() {
-      stopOrganNote(); // 關閉發聲
+      stopOrganNote(); 
       lastPlayedPhase = null;
       if (guidedTimer) clearInterval(guidedTimer);
       if (guidedAnimFrame) cancelAnimationFrame(guidedAnimFrame);
       document.getElementById('sync-feedback').classList.add('opacity-0');
     }
 
+    // --- 生理學通用輔助統計函數 ---
+    function calcMean(arr) {
+      return arr.reduce((a, b) => a + b, 0) / arr.length;
+    }
+    function calcStdDev(arr, mean) {
+      const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
+      return Math.sqrt(variance);
+    }
+    function calcSlope(arr) {
+      const n = arr.length;
+      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+      for (let i = 0; i < n; i++) {
+        const x = i + 1;
+        const y = arr[i];
+        sumX += x;
+        sumY += y;
+        sumXY += x * y;
+        sumXX += x * x;
+      }
+      return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    }
 
-    // --- 5. 生理病理數據評估引擎與視覺化渲染 ---
+    // --- 5. 生理病理數據評估與多維身心表型引擎 ---
     function generateReport(mode, rawData, methodId = null) {
       changeScreen('feedback');
-      stopOrganNote(); // 生成報告時，確保音效停止
+      stopOrganNote(); 
 
       let finalRR = 0;
       let finalIE = 1.5;
@@ -1280,6 +1303,16 @@
       let stabilityBadgeClass = "";
 
       let stableDataForViz = [];
+
+      // 初始化勳章預設狀態
+      let medalEmoji = "🧘";
+      let medalTitle = "正常穩健流";
+      let medalDesc = "您的呼吸時序分布常規且穩定，大腦及自律神經系統正進行正常的和諧代償調整。";
+      let medalBgClass = "from-zen-700 to-zen-800 border-zen-600 text-white";
+
+      // 預設時序軸分期標籤
+      let midStageText = "自主諧振";
+      let lateStageText = "深度入定";
 
       if (mode === 'free') {
         const stableData = rawData.slice(2);
@@ -1300,63 +1333,137 @@
           finalVA = parseFloat(estVA.toFixed(1));
           vdRatio = Math.round((VD / estVT) * 100);
 
+          // 核心代償解讀
           if (finalRR > 20) {
-            interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的靜息頻率高達 ${finalRR} 次/分，死腔通氣損耗比重達 ${vdRatio}%。雖然單分鐘通氣量（$VE$）看似足夠，但因為呼吸過淺，導致真正能參與肺泡氣體交換的有效肺泡換氣量（$VA$）僅約 ${finalVA} L/min。這在臨床上會增加呼吸肌做功負荷。建議多練習<strong>「同頻諧振呼吸法」</strong>，刻意放慢速度，拉長單次吸氣深度。`;
+            interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的平均速率高達 ${finalRR} 次/分，死腔損耗比重為 ${vdRatio}%。雖然每分鐘分鐘通氣量看似足夠，但由於吸氣過淺，大部分氣體僅在解剖死腔中滯留，真正進行氣體交換的有效肺泡換氣量（$VA$）僅 ${finalVA} L/min。此型態會顯著增加呼吸肌負荷與高碳酸血症風險。`;
           } else if (finalIE < 0.5) { 
-            interpretation = `<strong>【呼氣自發延長：神經安定代償】</strong><br>您的穩定呼吸狀態中，呼氣時間顯著大於吸氣（吸吐比達 1:${(1/finalIE).toFixed(1)}）。拉長呼氣相是身體啟動副交感神經、調控體內二氧化碳水平以降低大腦過度激發的典型生理反應。這是一項非常優良的抗壓代償表型。`;
+            interpretation = `<strong>【呼氣自發延長：神經安定代償】</strong><br>您的平均吸吐比已達到 1:${(1/finalIE).toFixed(1)}，顯示您自發性地大幅拉長了呼氣時間。在生理反射中，延長呼氣是啟動副交感神經、調控血管舒張、重置呼吸中樞對二氧化碳耐受度的良性行為，有助於降低周邊血管張力。`;
           } else if (finalRR >= 8 && finalRR <= 12) {
-            interpretation = `<strong>【慢深呼吸：卓越通氣效能】</strong><br>您的呼吸頻率為優質的 ${finalRR} 次/分，死腔通氣損耗比例僅為極低的 ${vdRatio}%。此狀態能達成最完美的肺泡通氣效率，二氧化碳清除順暢，代表您的自律神經系統極具諧振彈性，身心正處於高度覺察且放鬆的和諧狀態。`;
+            interpretation = `<strong>【慢深呼吸：卓越通氣效能】</strong><br>您的呼吸速率為完美的 ${finalRR} 次/分，死腔耗損被壓低至 ${vdRatio}%。這種慢而深的運作方式能在不增加心肺機械負荷的情況下，獲得極致高效的肺泡通氣效率，是自律神經系統極具諧振活性的健康表徵。`;
           } else {
-            interpretation = `<strong>【常態節律：身心穩定】</strong><br>您目前的呼吸型態大致平穩（BPM: ${finalRR}），自律神經與肺部氣體交換均處於常規代償軌跡。建議每日定時進行 3 分鐘<strong>「同頻諧振呼吸法」</strong>，維持呼吸器官的柔韌性與反射時間常數。`;
+            interpretation = `<strong>【常態節律：身心穩定】</strong><br>您目前的呼吸速率處於穩定的常態代償水平（BPM: ${finalRR}，死腔比: ${vdRatio}%）。建議每天進行 3-5 分鐘的<strong>「同頻諧振練習」</strong>以進一步優化心肺耦合彈性。`;
           }
         }
 
+        // 時序多維身心表型演算 (Chrono-phenotype Diagnostic Brain)
         if (stableCount >= 2) {
           const rrs = stableData.map(d => d.instant_rr);
           const tis = stableData.map(d => d.ti_seconds);
+          const tes = stableData.map(d => d.te_seconds);
           const ttots = stableData.map(d => d.ttot_seconds);
 
+          const meanRR = calcMean(rrs);
+          const stdDevRR = calcStdDev(rrs, meanRR);
+          const cvRR = (stdDevRR / meanRR) * 100; // 呼吸速率變異係數 %
+
+          const meanTi = calcMean(tis);
+          const stdDevTi = calcStdDev(tis, meanTi);
+
+          const meanTe = calcMean(tes);
+          const stdDevTe = calcStdDev(tes, meanTe);
+
+          const slopeRR = calcSlope(rrs); // 呼吸速率隨時間之線性斜率
+
+          // 識別深呼吸 / 深長嘆息 (Sigh / Spontaneous Sigh)
+          // 判定：吐氣時間比平均吐氣時間長 1.5 倍標準差以上
+          const sighCount = tes.filter(te => te > meanTe + 1.5 * (stdDevTe || 0.5)).length;
+
+          // 半段切片比對 (用於確認呼吸肌疲勞或雜念突波)
           const mid = Math.floor(stableCount / 2);
-          const firstHalf = rrs.slice(0, mid);
-          const secondHalf = rrs.slice(mid);
-          const avgFirst = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-          const avgSecond = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-          const rrDiff = avgSecond - avgFirst;
+          const firstHalfTi = tis.slice(0, mid);
+          const secondHalfTi = tis.slice(mid);
+          const avgFirstTi = calcMean(firstHalfTi);
+          const avgSecondTi = calcMean(secondHalfTi);
 
-          const meanRR = rrs.reduce((a, b) => a + b, 0) / stableCount;
-          const variance = rrs.reduce((a, b) => a + Math.pow(b - meanRR, 2), 0) / stableCount;
-          const rrStdDev = Math.sqrt(variance);
+          const modeLabel = appState.freeMode === 'quick' ? '快速模式' : (appState.freeMode === 'deep' ? '深度模式' : '不限時自主模式');
 
-          const meanTi = tis.reduce((a, b) => a + b, 0) / stableCount;
-          const tiVariance = tis.reduce((a, b) => a + Math.pow(b - meanTi, 2), 0) / stableCount;
-          const tiStdDev = Math.sqrt(tiVariance);
+          // (A) 五大 Contemplative 身心表型判定
+          if (cvRR <= 2.5) {
+            // 1. 意念超控制 (Cortical Hyper-Rigidity)
+            medalEmoji = "⚙️";
+            medalTitle = "意念超控制態";
+            medalDesc = `您的呼吸速率變異度極低 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，吸吐時間幾乎如機器般刻板不變。這代表您大腦皮質（控制中樞）深度介入，身體正處於強烈的自我要求或防禦狀態，缺乏了自然的生理隨機變異。放下對完美的執念，容許氣流自然搖擺。`;
+            medalBgClass = "from-amber-900 to-zen-900 border-amber-600 text-amber-50";
+            
+            midStageText = "意志控制";
+            lateStageText = "過度緊繃";
 
-          let modeLabel = appState.freeMode === 'quick' ? '快速模式' : (appState.freeMode === 'deep' ? '深度模式' : '不限時自主模式');
+          } else if (sighCount > 0) {
+            // 2. 自發深釋放 (Spontaneous Autonomic Release)
+            medalEmoji = "🌟";
+            medalTitle = "自發深釋放流";
+            medalDesc = `偵測到您在檢測中出現了 ${sighCount} 次自發性深長嘆息（極致呼氣達 ${Math.max(...tes).toFixed(1)} 秒）。此表型在自律神經學中是極其珍貴的「系統重置鍵 (Autonomic Reset)」，代表您體內積累的潛在張力在此刻被大腦主動釋放，有效重新招募萎陷肺泡。`;
+            medalBgClass = "from-emerald-950 to-zen-900 border-emerald-500 text-emerald-50";
 
-          if (rrDiff < -1.5) {
+            midStageText = "張力累積";
+            lateStageText = "長嘆釋放";
+
+          } else if (slopeRR > 0.15 && avgSecondTi < avgFirstTi * 0.75) {
+            // 3. 呼吸肌疲勞態 (Respiratory Fatigue Compensation)
+            medalEmoji = "🍂";
+            medalTitle = "呼吸肌代償疲勞";
+            medalDesc = `您的呼吸後半段吸氣長度急劇縮短，且頻率呈顯著加速斜率 ($m_{RR} = +${slopeRR.toFixed(2)}$)。生理學上，這反映出您尚未適應深長呼吸，導致膈肌等呼吸主肌群負荷過重，神經中樞被迫以「變淺、加快」的形式進行代償性通氣。`;
+            medalBgClass = "from-rose-950 to-zen-900 border-rose-600 text-rose-50";
+
+            midStageText = "過度努力";
+            lateStageText = "代償疲勞";
+
+          } else if (cvRR >= 20.0) {
+            // 4. 雜念漂移態 (Intrusive Thought Drift)
+            medalEmoji = "💭";
+            medalTitle = "雜念漂移表型";
+            medalDesc = `您的呼吸頻率出現劇烈、無規律的波動 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，並夾雜間歇性急促突波。在正念科學中，這象徵「雜念干擾（Thought Intrusion）」，當思緒飄向焦慮、未完任務時，大腦交感神經會瞬間微弱放電打亂呼吸中樞。這非常正常，練習有意識地收回念頭即可。`;
+            medalBgClass = "from-slate-800 to-zen-900 border-slate-500 text-slate-100";
+
+            midStageText = "思緒游離";
+            lateStageText = "不穩漂移";
+
+          } else if (slopeRR < -0.1 && cvRR < 12.0) {
+            // 5. 禪定諧振流 (Mindful Resonant Flow)
+            medalEmoji = "🏆";
+            medalTitle = "禪定諧振流";
+            medalDesc = `完美的自律與諧振狀態！您的呼吸頻率隨時間流逝穩定且溫和地慢下來 ($m_{RR} = ${slopeRR.toFixed(2)}$)，且波動保持健康的微小變異 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)。這代表您大腦全然放鬆、心肺耦合度極佳，大教堂管風琴的音效已順利引領您進入心流（Flow State）。`;
+            medalBgClass = "from-zen-600 to-zen-900 border-zen-400 text-zen-50";
+
+            midStageText = "諧振調適";
+            lateStageText = "深度入定";
+          } else {
+            // 常態穩健
+            medalEmoji = "🧘";
+            medalTitle = "常態穩健流";
+            medalDesc = `您的呼吸節律變異度健康 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，後半段頻率未出現異常偏離。這顯示您的神經調控中樞發射均勻，生理系統正進行常規、自適應的平衡代償。`;
+            medalBgClass = "from-zen-700 to-zen-800 border-zen-600 text-white";
+
+            midStageText = "常規調和";
+            lateStageText = "身心漸安";
+          }
+
+          // (B) 調節與穩定度傳統勳章判定 (用於徽章輔助)
+          if (slopeRR < -0.1) {
             trendBadgeText = "漸進放鬆 📉";
             trendBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您呈現了<strong>「漸進放鬆」</strong>的特徵：前半段平均頻率為 ${avgFirst.toFixed(0)} BPM，後半段逐漸放緩至 ${avgSecond.toFixed(0)} BPM。這顯示隨著檢測深入，您的大腦正主動降低呼吸中樞驅動，副交感神經開始建立優勢。`;
-          } else if (rrDiff > 1.5) {
+            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您前半段平均頻率為 ${calcMean(firstHalf).toFixed(0)} BPM，後半段逐漸放緩至 ${calcMean(secondHalf).toFixed(0)} BPM。這顯示隨著檢測深入，您的大腦正主動降低呼吸中樞驅動，副交感神經開始建立優勢。`;
+          } else if (slopeRR > 0.1) {
             trendBadgeText = "漸進緊繃 📈";
             trendBadgeClass = "bg-rose-100 text-rose-800 border border-rose-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您呈現了<strong>「漸進緊繃」</strong>的特徵：後半段平均頻率為 ${avgSecond.toFixed(0)} BPM，高於前半段的 ${avgFirst.toFixed(0)} BPM。這通常是由於操作螢幕時指尖施力緊繃、憋氣適應不良，或思緒浮躁使交感神經被再度激發所致。`;
+            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您後半段平均頻率為 ${calcMean(secondHalf).toFixed(0)} BPM，高於前半段的 ${calcMean(firstHalf).toFixed(0)} BPM。這通常是由於操作螢幕時指尖施力緊繃、憋氣適應不良，或思緒浮躁使交感神經被再度激發所致。`;
           } else {
             trendBadgeText = "均勻維持 ⚖️";
             trendBadgeClass = "bg-blue-100 text-blue-800 border border-blue-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您呈現了<strong>「均勻維持」</strong>的特徵：全程呼吸頻率起伏極微（變動率 < 1.5 BPM），顯示您的呼吸神經反饋極為平穩，中樞呼吸發生器釋放的訊號非常均勻。`;
+            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，全程呼吸頻率起伏極微（變動斜率 $m_{RR}$ 近乎水平），顯示您的呼吸神經反饋極為平穩，中樞呼吸發生器釋放的訊號非常均勻。`;
           }
 
-          if (rrStdDev > 2.5 || tiStdDev > 0.5) {
+          if (cvRR > 15.0) {
             stabilityBadgeText = "波動劇烈 ⚠️";
             stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
-            trajectoryInterpretation += `<br><br>在波動性上，您的呼吸展現出<strong>「不規律與深淺不一」</strong>的特徵（頻率與吸氣長度變異度大）。這在臨床生理學中，常表示大腦此時正受到多重念頭、雜念干擾，導致延腦吸呼切換中樞信號流動受阻。建議嘗試<strong>「箱型呼吸法」</strong>，藉由強制憋氣將專注力拉回。`;
+            trajectoryInterpretation += `<br><br>在波動性上，您的速率展現出<strong>「不規律與深淺不一」</strong>的特徵（呼吸變異係數 $CV_{RR}$ 偏高）。這在臨床生理學中，常表示大腦此時正受到多重念頭、雜念干擾。建議嘗試<strong>「箱型呼吸法」</strong>，藉由強制憋氣將專注力拉回。`;
           } else {
             stabilityBadgeText = "規律一致 ✨";
             stabilityBadgeClass = "bg-teal-100 text-teal-800 border border-teal-200";
-            trajectoryInterpretation += `<br><br>在波動性上，您的節律展現出<strong>「高度規律與對稱」</strong>。每一次呼吸循環的時序長度與觸壓深度變異極小。這反映出您的心肺耦合度極高，大腦皮質主動干擾極低，是高度專注、安定和諧的神經反饋。`;
+            trajectoryInterpretation += `<br><br>在波動性上，您的節律展現出<strong>「高度規律與對稱」</strong>。每一次呼吸循環的時序長度與觸壓深度變異極小。這反映出您的心肺耦合度極高，大腦皮質主動干擾極低。`;
           }
 
+          // 不限時特徵深度挖掘
           if (appState.freeMode === 'unlimited' && stableCount >= 4) {
             const maxTtot = Math.max(...ttots);
             const maxIdx = ttots.indexOf(maxTtot) + 1;
@@ -1364,18 +1471,19 @@
             const totalDurationSecs = Math.round(ttots.reduce((a, b) => a + b, 0));
 
             trajectoryInterpretation += `<br><br>💡 <strong>自主長程練習特徵：</strong>`;
-            trajectoryInterpretation += `<br>• 您完成了約 <strong>${totalDurationSecs}</strong> 秒的自律覺察，最深長的一口氣發生在有效呼吸第 <strong>${maxIdx}</strong> 次（總計持續了 <strong>${maxTtot.toFixed(1)}</strong> 秒），代表您在該瞬間達成了極佳的潮氣量擴張與氣體滯留控制。`;
-            trajectoryInterpretation += `<br>• 生理放鬆度最高的極致瞬間，呼吸頻率曾低至 <strong>${minRRVal.toFixed(1)}</strong> BPM。這是一個強大的副交感神經刺激訊號。`;
+            trajectoryInterpretation += `<br>• 您完成了約 <strong>${totalDurationSecs}</strong> 秒的自律覺察，最深長的一口氣發生在有效呼吸第 <strong>${maxIdx}</strong> 次（總計持續了 <strong>${maxTtot.toFixed(1)}</strong> 秒），代表您在該瞬間達成了極佳的潮氣量與肺通氣擴張。`;
+            trajectoryInterpretation += `<br>• 生理放鬆度最高的極致瞬間，呼吸頻率曾低至 <strong>${minRRVal.toFixed(1)}</strong> BPM。這是一個強大的副交感神經重置信號。`;
           }
         } else {
           trendBadgeText = "常態 🧘";
           trendBadgeClass = "bg-zen-200 text-zen-700";
           stabilityBadgeText = "暖身完成";
           stabilityBadgeClass = "bg-zen-200 text-zen-700";
-          trajectoryInterpretation = "由於過濾暖身後，有效呼吸數據僅有 1 次，尚無法比對前後半段的演變軌跡。建議下次練習可適度拉長呼吸次數，解鎖更為豐富的自律調節報告！";
+          trajectoryInterpretation = "由於過濾暖身後，有效呼吸數據僅有 1 次，尚無法比對前後半段的演變軌跡。建議下次練習可適度拉長呼吸次數，解鎖更為豐富的時序調節報告！";
         }
 
       } else {
+        // 引導練習完成報告
         const config = guidedMethods[methodId];
         const totalPracticeSecs = 60;
         const syncPercent = Math.max(0, Math.round(((totalPracticeSecs - syncErrorSecs) / totalPracticeSecs) * 100));
@@ -1386,18 +1494,42 @@
           finalVA = 4.8;
           vdRatio = 21;
           interpretation = `<strong>【安神放鬆：完成引導】</strong><br>感謝您完成 4-7-8 秒放鬆法！本法藉由刻意憋氣 (7秒) 提高體內 $PaCO_2$ 與氫離子刺激，並透過極致的 8 秒長呼氣，能大幅刺激心臟的壓力感受器、強效喚醒副交感神經。這有助於重塑大腦的化學受器斜率，讓您在睡前獲得極致沉靜。`;
+          
+          medalEmoji = "🌙";
+          medalTitle = "安神極致靜心流";
+          medalDesc = `您的指尖操作與經典 4-7-8 安神法完美契合。透過 7 秒的憋氣蓄能與 8 秒的極致長呼，您成功下調了交感神經，為全身創造了高質感的舒壓與助眠氛圍。`;
+          medalBgClass = "from-indigo-950 to-zen-900 border-indigo-500 text-indigo-100";
+          
+          midStageText = "7秒屏息";
+          lateStageText = "8秒極釋";
         } else if (methodId === 'box') {
           finalRR = 3.75;
           finalIE = 1.0;
           finalVA = 4.5;
           vdRatio = 23;
           interpretation = `<strong>【箱型減壓：完成引導】</strong><br>您已成功跟隨完成箱型呼吸法。這種等長 (4s) 的四階段循環，能阻斷因緊急狀況產生的急性交感風暴，均衡體內酸鹼 pH 值。本法推薦在重要演講、高壓決策前使用，能使大腦保持不缺氧的極限冷靜。`;
-        } else { 
+          
+          medalEmoji = "🛡️";
+          medalTitle = "戰術等長冷靜態";
+          medalDesc = `海豹部隊戰術等長減壓。透過吸氣、憋氣、吐氣、憋氣的四象等寬轉換，您成功在高難度的觸壓交互中重塑了中樞對恐懼/緊繃的自主掌控。`;
+          medalBgClass = "from-slate-800 to-zen-900 border-slate-600 text-slate-100";
+
+          midStageText = "吸憋切換";
+          lateStageText = "等長歸零";
+        } else { // coherent
           finalRR = 6.0;
           finalIE = 1.0;
           finalVA = 5.1;
           vdRatio = 18;
           interpretation = `<strong>【同頻諧振：完成引導】</strong><br>完美的 5-5 秒同步諧振！在醫學上，每分鐘 6 次呼吸能引起肺部牽張反射與自主神經血管運動最完美的諧振。這能使您的死腔損耗比例壓到極低，達成最省力、最高氧合的通氣狀態。`;
+          
+          medalEmoji = "🌊";
+          medalTitle = "同頻諧振諧振態";
+          medalDesc = `心肺物理耦合的巔峰。每分鐘 6 次的深緩呼吸成功激發了心血管運動與肺牽張反射的黃金諧振（Resonant Frequency），死腔損耗壓低，能量效率極高。`;
+          medalBgClass = "from-teal-950 to-zen-900 border-teal-500 text-teal-100";
+
+          midStageText = "同頻勻吸";
+          lateStageText = "諧振調適";
         }
 
         trendBadgeText = "引導訓練 🧘";
@@ -1405,15 +1537,15 @@
         if (syncPercent >= 85) {
           stabilityBadgeText = "完美同步 🏆";
           stabilityBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
-          trajectoryInterpretation = `您的指尖操作與引導環動態縮放高度一致，達標率達 <strong>${syncPercent}%</strong>。這意味著您的呼吸反射已成功與功法時間軸建立和諧耦合，能有效地重塑自發呼吸驅動中樞。`;
+          trajectoryInterpretation = `您的指尖操作與引導環動態縮放高度一致，達標率達 <strong>${syncPercent}%</strong>。這意味著您的呼吸反射已成功與功法時間軸建立和諧耦合。`;
         } else if (syncPercent >= 60) {
           stabilityBadgeText = "部分契合 👍";
           stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
-          trajectoryInterpretation = `您的指尖操作與引導環同步達標率為 <strong>${syncPercent}%</strong>。在吸氣/憋氣或憋氣/呼氣的轉換瞬間有輕微跟隨脫節，這在初學引導時非常正常，持續訓練可以幫助建立更好的呼吸肌肉感知記憶。`;
+          trajectoryInterpretation = `您的指尖操作與引導環同步達標率為 <strong>${syncPercent}%</strong>。在吸氣/憋氣或憋氣/呼氣的轉換瞬間有輕微跟隨脫節，這在初學引導時非常正常。`;
         } else {
           stabilityBadgeText = "待加強 ⚠️";
           stabilityBadgeClass = "bg-rose-100 text-rose-800 border border-rose-200";
-          trajectoryInterpretation = `您的引導達標率為 <strong>${syncPercent}%</strong>。您在按壓螢幕時，可能依然依照習慣的自發慣性呼吸。建議再次練習時，專注於外圈光環與提示，或閉上眼睛跟隨手機轉換時的輕微震動。`;
+          trajectoryInterpretation = `您的引導達標率為 <strong>${syncPercent}%</strong>。您在按壓螢幕時，可能依然依照習慣的自發慣性呼吸。建議再次練習時，專注於外圈光環與提示。`;
         }
       }
 
@@ -1431,6 +1563,21 @@
       bTrend.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${trendBadgeClass}`;
       bStability.innerText = stabilityBadgeText;
       bStability.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${stabilityBadgeClass}`;
+
+      // --- 渲染全新升級：身心呼吸表型勳章 ---
+      const mCard = document.getElementById('phenotype-medal-card');
+      const mIcon = document.getElementById('phenotype-medal-icon');
+      const mTitle = document.getElementById('phenotype-title');
+      const mDesc = document.getElementById('phenotype-long-desc');
+
+      mCard.className = `bg-gradient-to-br ${medalBgClass} rounded-2xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden border`;
+      mIcon.innerText = medalEmoji;
+      mTitle.innerText = medalTitle;
+      mDesc.innerHTML = medalDesc;
+
+      // --- 渲染時間分期標籤軸 ---
+      document.getElementById('timeline-stage-mid').innerText = midStageText;
+      document.getElementById('timeline-stage-late').innerText = lateStageText;
 
       // --- 執行：單次呼吸吸吐時序與波形視覺化 ---
       renderFeedbackSpirogramChart(mode, stableDataForViz, methodId);
@@ -1714,7 +1861,7 @@
 
       appState.history.forEach(item => {
         const div = document.createElement('div');
-        div.className = "bg-zen-50/50 border border-zen-100 p-4 rounded-xl flex justify-between items-center";
+        div.className = "bg-zen-50/50 border border-zen-100 p-4 rounded-xl flex justify-between items-center shrink-0";
         div.innerHTML = `
           <div class="space-y-1">
             <div class="flex items-center space-x-2">
