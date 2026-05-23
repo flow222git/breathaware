@@ -582,7 +582,7 @@
           </div>
 
           <div class="space-y-2.5 max-h-[22rem] overflow-y-auto custom-scroll" id="history-list">
-            <div class="text-center py-8 text-xs text-zen-400">尚未累積任何練習紀錄</div>
+            <div class="text-center py-8 text-xs text-zen-400">尚未累積 any 練習紀錄</div>
           </div>
         </div>
       </div>
@@ -633,6 +633,29 @@
     function initAudio() {
       if (audioCtx) return;
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    // 🛡️ 臨床防溢出與崩潰之 safeToFixed 數值安全過濾器
+    function safeToFixed(value, digits = 1) {
+      if (value === undefined || value === null || !isFinite(value) || isNaN(value)) {
+        return "--";
+      }
+      return value.toFixed(digits);
+    }
+
+    // 🛡️ 補上先前遺漏的 showToast 全域通知函式
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      if (toast && toastText) {
+        toastText.innerText = text;
+        toast.classList.remove('opacity-0');
+        toast.classList.add('opacity-100');
+        setTimeout(() => {
+          toast.classList.remove('opacity-100');
+          toast.classList.add('opacity-0');
+        }, 2500);
+      }
     }
 
     function playOrganNote(frequency) {
@@ -857,7 +880,10 @@
     }
 
     function resetFreeSession() {
-      if (canvasAnimFrame) cancelAnimationFrame(canvasAnimFrame);
+      if (canvasAnimFrame) {
+        cancelAnimationFrame(canvasAnimFrame);
+        canvasAnimFrame = null;
+      }
       stopOrganNote(); 
       appState.breathData = [];
       currentCycle = { startTime: null, inhaleTime: null, exhaleTime: null, status: 'idle' };
@@ -868,12 +894,15 @@
       document.getElementById('breath-chart-bar').innerHTML = '<div class="text-center text-xs text-zen-400 w-full py-4">等待開始呼吸...</div>';
     }
 
+    // 🛡️ 防止多次重疊載入 Event Listeners 造成數據倍增
     function setupTouchEvents() {
+      if (window.touchEventsSetup) return;
       const touchPad = document.getElementById('touch-pad');
       touchPad.addEventListener('touchstart', (e) => { e.preventDefault(); handleInhaleStart(); }, {passive: false});
       touchPad.addEventListener('touchend', (e) => { e.preventDefault(); handleExhaleStart(); }, {passive: false});
       touchPad.addEventListener('mousedown', (e) => { handleInhaleStart(); });
       touchPad.addEventListener('mouseup', (e) => { handleExhaleStart(); });
+      window.touchEventsSetup = true;
     }
 
     function handleInhaleStart() {
@@ -898,7 +927,7 @@
 
         if (ttot > 2 && ttot < 25) { 
           const instantRR = 60 / ttot;
-          const ie = ti / te;
+          const ie = ti / (te || 0.1); // 防止分母為 0
 
           appState.breathData.push({
             ti_seconds: parseFloat(ti.toFixed(1)),
@@ -913,7 +942,7 @@
           }
 
           document.getElementById('live-rr').innerText = instantRR.toFixed(1);
-          document.getElementById('live-ie').innerText = `1:${(1/ie).toFixed(1)}`;
+          document.getElementById('live-ie').innerText = `1:${safeToFixed(1/ie, 1)}`;
           updateCycleProgress();
           renderBreathByBreathBars();
 
@@ -1209,12 +1238,15 @@
       outerRing.style.transform = step.phase === 'inhale' ? 'scale(1.2)' : (step.phase === 'exhale' ? 'scale(0.8)' : 'scale(1.0)');
     }
 
+    // 🛡️ 防止多次重疊載入 Event Listeners 造成 guidedTouch 數據混亂
     function setupGuidedTouch() {
+      if (window.guidedTouchSetup) return;
       const pad = document.getElementById('guided-touch-pad');
       pad.addEventListener('touchstart', (e) => { e.preventDefault(); handleGuidedPress(true); }, {passive: false});
       pad.addEventListener('touchend', (e) => { e.preventDefault(); handleGuidedPress(false); }, {passive: false});
       pad.addEventListener('mousedown', (e) => { handleGuidedPress(true); });
       pad.addEventListener('mouseup', (e) => { handleGuidedPress(false); });
+      window.guidedTouchSetup = true;
     }
 
     function handleGuidedPress(isPressed) {
@@ -1259,20 +1291,26 @@
       stopOrganNote(); 
       lastPlayedPhase = null;
       if (guidedTimer) clearInterval(guidedTimer);
-      if (guidedAnimFrame) cancelAnimationFrame(guidedAnimFrame);
+      if (guidedAnimFrame) {
+        cancelAnimationFrame(guidedAnimFrame);
+        guidedAnimFrame = null;
+      }
       document.getElementById('sync-feedback').classList.add('opacity-0');
     }
 
     // --- 生理學通用輔助統計函數 ---
     function calcMean(arr) {
+      if (!arr.length) return 0;
       return arr.reduce((a, b) => a + b, 0) / arr.length;
     }
     function calcStdDev(arr, mean) {
+      if (!arr.length) return 0;
       const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
       return Math.sqrt(variance);
     }
     function calcSlope(arr) {
       const n = arr.length;
+      if (n < 2) return 0;
       let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
       for (let i = 0; i < n; i++) {
         const x = i + 1;
@@ -1289,6 +1327,16 @@
     function generateReport(mode, rawData, methodId = null) {
       changeScreen('feedback');
       stopOrganNote(); 
+
+      // 🛡️ 報告渲染前，主動取消並解鎖任何後台 Canvas 動畫，釋放 GPU 效能並防止記憶體重疊
+      if (canvasAnimFrame) {
+        cancelAnimationFrame(canvasAnimFrame);
+        canvasAnimFrame = null;
+      }
+      if (guidedAnimFrame) {
+        cancelAnimationFrame(guidedAnimFrame);
+        guidedAnimFrame = null;
+      }
 
       let finalRR = 0;
       let finalIE = 1.5;
@@ -1312,7 +1360,7 @@
 
       // 預設時序軸分期標籤
       let midStageText = "自主諧振";
-      let lateStageText = "深度入定";
+      let lateStageText = "身心漸安";
 
       if (mode === 'free') {
         const stableData = rawData.slice(2);
@@ -1335,9 +1383,9 @@
 
           // 核心代償解讀
           if (finalRR > 20) {
-            interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的平均速率高達 ${finalRR} 次/分，死腔損耗比重為 ${vdRatio}%。雖然每分鐘分鐘通氣量看似足夠，但由於吸氣過淺，大部分氣體僅在解剖死腔中滯留，真正進行氣體交換的有效肺泡換氣量（$VA$）僅 ${finalVA} L/min。此型態會顯著增加呼吸肌負荷與高碳酸血症風險。`;
+            interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的平均速率高達 ${finalRR} 次/分，死腔通氣損耗比重為 ${vdRatio}%。雖然每分鐘通氣量（$VE$）看似足夠，但由於呼吸過淺，大部分氣體僅在解剖死腔中庫存，真正進行氣體交換的有效肺泡換氣量（$VA$）僅 ${finalVA} L/min。此型態會顯著增加呼吸肌負荷與高碳酸血症風險。`;
           } else if (finalIE < 0.5) { 
-            interpretation = `<strong>【呼氣自發延長：神經安定代償】</strong><br>您的平均吸吐比已達到 1:${(1/finalIE).toFixed(1)}，顯示您自發性地大幅拉長了呼氣時間。在生理反射中，延長呼氣是啟動副交感神經、調控血管舒張、重置呼吸中樞對二氧化碳耐受度的良性行為，有助於降低周邊血管張力。`;
+            interpretation = `<strong>【呼氣自發延長：神經安定代償】</strong><br>您的平均吸吐比已達到 1:${safeToFixed(1/finalIE, 1)}，顯示您自發性地大幅拉長了呼氣時間。在生理反射中，延長呼氣是啟動副交感神經、調控血管舒張、重置呼吸中樞對二氧化碳耐受度的良性行為，有助於降低周邊血管張力。`;
           } else if (finalRR >= 8 && finalRR <= 12) {
             interpretation = `<strong>【慢深呼吸：卓越通氣效能】</strong><br>您的呼吸速率為完美的 ${finalRR} 次/分，死腔耗損被壓低至 ${vdRatio}%。這種慢而深的運作方式能在不增加心肺機械負荷的情況下，獲得極致高效的肺泡通氣效率，是自律神經系統極具諧振活性的健康表徵。`;
           } else {
@@ -1354,7 +1402,7 @@
 
           const meanRR = calcMean(rrs);
           const stdDevRR = calcStdDev(rrs, meanRR);
-          const cvRR = (stdDevRR / meanRR) * 100; // 呼吸速率變異係數 %
+          const cvRR = meanRR > 0 ? (stdDevRR / meanRR) * 100 : 0; // 呼吸速率變異係數 %
 
           const meanTi = calcMean(tis);
           const stdDevTi = calcStdDev(tis, meanTi);
@@ -1365,11 +1413,13 @@
           const slopeRR = calcSlope(rrs); // 呼吸速率隨時間之線性斜率
 
           // 識別深呼吸 / 深長嘆息 (Sigh / Spontaneous Sigh)
-          // 判定：吐氣時間比平均吐氣時間長 1.5 倍標準差以上
           const sighCount = tes.filter(te => te > meanTe + 1.5 * (stdDevTe || 0.5)).length;
 
-          // 半段切片比對 (用於確認呼吸肌疲勞或雜念突波)
+          // 半段切片比對
           const mid = Math.floor(stableCount / 2);
+          const firstHalf = rrs.slice(0, mid);
+          const secondHalf = rrs.slice(mid);
+
           const firstHalfTi = tis.slice(0, mid);
           const secondHalfTi = tis.slice(mid);
           const avgFirstTi = calcMean(firstHalfTi);
@@ -1377,12 +1427,12 @@
 
           const modeLabel = appState.freeMode === 'quick' ? '快速模式' : (appState.freeMode === 'deep' ? '深度模式' : '不限時自主模式');
 
-          // (A) 五大 Contemplative 身心表型判定
-          if (cvRR <= 2.5) {
+          // (A) 五大 Contemplative 身心表型判定（導入安全防範 toFixed 補丁）
+          if (cvRR <= 2.5 && cvRR > 0) {
             // 1. 意念超控制 (Cortical Hyper-Rigidity)
             medalEmoji = "⚙️";
             medalTitle = "意念超控制態";
-            medalDesc = `您的呼吸速率變異度極低 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，吸吐時間幾乎如機器般刻板不變。這代表您大腦皮質（控制中樞）深度介入，身體正處於強烈的自我要求或防禦狀態，缺乏了自然的生理隨機變異。放下對完美的執念，容許氣流自然搖擺。`;
+            medalDesc = `您的呼吸速率變異度極低 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，吸吐時間幾乎如機器般刻板不變。這代表您大腦皮質（控制中樞）深度介入，身體正處於強烈的自我要求或防禦狀態，缺乏了自然的生理隨機變異。放下對完美的執念，容許氣流自然搖擺。`;
             medalBgClass = "from-amber-900 to-zen-900 border-amber-600 text-amber-50";
             
             midStageText = "意志控制";
@@ -1392,17 +1442,17 @@
             // 2. 自發深釋放 (Spontaneous Autonomic Release)
             medalEmoji = "🌟";
             medalTitle = "自發深釋放流";
-            medalDesc = `偵測到您在檢測中出現了 ${sighCount} 次自發性深長嘆息（極致呼氣達 ${Math.max(...tes).toFixed(1)} 秒）。此表型在自律神經學中是極其珍貴的「系統重置鍵 (Autonomic Reset)」，代表您體內積累的潛在張力在此刻被大腦主動釋放，有效重新招募萎陷肺泡。`;
+            medalDesc = `偵測到您在檢測中出現了 ${sighCount} 次自發性深長嘆息（極致呼氣達 ${safeToFixed(Math.max(...tes), 1)} 秒）。此表型在自律神經學中是極其珍貴的「系統重置鍵 (Autonomic Reset)」，代表您體內積累的潛在張力在此刻被大腦主動釋放，有效重新招募與擴張肺泡。`;
             medalBgClass = "from-emerald-950 to-zen-900 border-emerald-500 text-emerald-50";
 
             midStageText = "張力累積";
             lateStageText = "長嘆釋放";
 
-          } else if (slopeRR > 0.15 && avgSecondTi < avgFirstTi * 0.75) {
+          } else if (slopeRR > 0.15 && avgFirstTi > 0 && avgSecondTi < avgFirstTi * 0.75) {
             // 3. 呼吸肌疲勞態 (Respiratory Fatigue Compensation)
             medalEmoji = "🍂";
             medalTitle = "呼吸肌代償疲勞";
-            medalDesc = `您的呼吸後半段吸氣長度急劇縮短，且頻率呈顯著加速斜率 ($m_{RR} = +${slopeRR.toFixed(2)}$)。生理學上，這反映出您尚未適應深長呼吸，導致膈肌等呼吸主肌群負荷過重，神經中樞被迫以「變淺、加快」的形式進行代償性通氣。`;
+            medalDesc = `您的呼吸後半段吸氣長度急劇縮短，且頻率呈顯著加速斜率 ($m_{RR} = +${safeToFixed(slopeRR, 2)}$)。生理學上，這反映出您尚未適應深長呼吸，導致膈肌等呼吸主肌群負荷過重，神經中樞被迫以「變淺、加快」的形式進行代償性通氣。`;
             medalBgClass = "from-rose-950 to-zen-900 border-rose-600 text-rose-50";
 
             midStageText = "過度努力";
@@ -1412,7 +1462,7 @@
             // 4. 雜念漂移態 (Intrusive Thought Drift)
             medalEmoji = "💭";
             medalTitle = "雜念漂移表型";
-            medalDesc = `您的呼吸頻率出現劇烈、無規律的波動 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，並夾雜間歇性急促突波。在正念科學中，這象徵「雜念干擾（Thought Intrusion）」，當思緒飄向焦慮、未完任務時，大腦交感神經會瞬間微弱放電打亂呼吸中樞。這非常正常，練習有意識地收回念頭即可。`;
+            medalDesc = `您的呼吸頻率出現劇烈、無規律的波動 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，並夾雜間歇性急促突波。在正念科學中，這象徵「雜念干擾（Thought Intrusion）」，當思緒飄向焦慮、未完任務時，大腦交感神經會瞬間微弱放電打亂呼吸中樞。這非常正常，練習有意識地收回念頭即可。`;
             medalBgClass = "from-slate-800 to-zen-900 border-slate-500 text-slate-100";
 
             midStageText = "思緒游離";
@@ -1422,7 +1472,7 @@
             // 5. 禪定諧振流 (Mindful Resonant Flow)
             medalEmoji = "🏆";
             medalTitle = "禪定諧振流";
-            medalDesc = `完美的自律與諧振狀態！您的呼吸頻率隨時間流逝穩定且溫和地慢下來 ($m_{RR} = ${slopeRR.toFixed(2)}$)，且波動保持健康的微小變異 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)。這代表您大腦全然放鬆、心肺耦合度極佳，大教堂管風琴的音效已順利引領您進入心流（Flow State）。`;
+            medalDesc = `完美的自律與諧振狀態！您的呼吸頻率隨時間流逝穩定且溫和地慢下來 ($m_{RR} = ${safeToFixed(slopeRR, 2)}$)，且波動保持健康的微小變異 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)。這代表您大腦全然放鬆、心肺耦合度極佳，大教堂管風琴的音效已順利引領您進入心流（Flow State）。`;
             medalBgClass = "from-zen-600 to-zen-900 border-zen-400 text-zen-50";
 
             midStageText = "諧振調適";
@@ -1431,22 +1481,22 @@
             // 常態穩健
             medalEmoji = "🧘";
             medalTitle = "常態穩健流";
-            medalDesc = `您的呼吸節律變異度健康 ($CV_{RR}$ = ${cvRR.toFixed(1)}%)，後半段頻率未出現異常偏離。這顯示您的神經調控中樞發射均勻，生理系統正進行常規、自適應的平衡代償。`;
+            medalDesc = `您的呼吸節律變異度健康 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，後半段頻率未出現異常偏離。這顯示您的神經調控中樞發射均勻，生理系統正進行常規、自適應的平衡代償。`;
             medalBgClass = "from-zen-700 to-zen-800 border-zen-600 text-white";
 
             midStageText = "常規調和";
             lateStageText = "身心漸安";
           }
 
-          // (B) 調節與穩定度傳統勳章判定 (用於徽章輔助)
+          // (B) 調節與穩定度傳統勳章判定
           if (slopeRR < -0.1) {
             trendBadgeText = "漸進放鬆 📉";
             trendBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您前半段平均頻率為 ${calcMean(firstHalf).toFixed(0)} BPM，後半段逐漸放緩至 ${calcMean(secondHalf).toFixed(0)} BPM。這顯示隨著檢測深入，您的大腦正主動降低呼吸中樞驅動，副交感神經開始建立優勢。`;
+            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您前半段平均頻率為 ${safeToFixed(calcMean(firstHalf), 0)} BPM，後半段逐漸放緩至 ${safeToFixed(calcMean(secondHalf), 0)} BPM。這顯示隨著檢測深入，您的大腦正主動降低呼吸中樞驅動，副交感神經開始建立優勢。`;
           } else if (slopeRR > 0.1) {
             trendBadgeText = "漸進緊繃 📈";
             trendBadgeClass = "bg-rose-100 text-rose-800 border border-rose-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您後半段平均頻率為 ${calcMean(secondHalf).toFixed(0)} BPM，高於前半段的 ${calcMean(firstHalf).toFixed(0)} BPM。這通常是由於操作螢幕時指尖施力緊繃、憋氣適應不良，或思緒浮躁使交感神經被再度激發所致。`;
+            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您後半段平均頻率為 ${safeToFixed(calcMean(secondHalf), 0)} BPM，高於前半段的 ${safeToFixed(calcMean(firstHalf), 0)} BPM。這通常是由於操作螢幕時指尖施力緊繃、憋氣適應不良，或思緒浮躁使交感神經被再度激發所致。`;
           } else {
             trendBadgeText = "均勻維持 ⚖️";
             trendBadgeClass = "bg-blue-100 text-blue-800 border border-blue-200";
@@ -1471,19 +1521,18 @@
             const totalDurationSecs = Math.round(ttots.reduce((a, b) => a + b, 0));
 
             trajectoryInterpretation += `<br><br>💡 <strong>自主長程練習特徵：</strong>`;
-            trajectoryInterpretation += `<br>• 您完成了約 <strong>${totalDurationSecs}</strong> 秒的自律覺察，最深長的一口氣發生在有效呼吸第 <strong>${maxIdx}</strong> 次（總計持續了 <strong>${maxTtot.toFixed(1)}</strong> 秒），代表您在該瞬間達成了極佳的潮氣量與肺通氣擴張。`;
-            trajectoryInterpretation += `<br>• 生理放鬆度最高的極致瞬間，呼吸頻率曾低至 <strong>${minRRVal.toFixed(1)}</strong> BPM。這是一個強大的副交感神經重置信號。`;
+            trajectoryInterpretation += `<br>• 您完成了約 <strong>${totalDurationSecs}</strong> 秒的自律覺察，最深長的一口氣發生在有效呼吸第 <strong>${maxIdx}</strong> 次（總計持續了 <strong>${safeToFixed(maxTtot, 1)}</strong> 秒），代表您在該瞬間達成了極佳的潮氣量與肺通氣擴張。`;
+            trajectoryInterpretation += `<br>• 生理放鬆度最高的極致瞬間，呼吸頻率曾低至 <strong>${safeToFixed(minRRVal, 1)}</strong> BPM。這是一個強大的副交感神經重置信號。`;
           }
         } else {
           trendBadgeText = "常態 🧘";
           trendBadgeClass = "bg-zen-200 text-zen-700";
           stabilityBadgeText = "暖身完成";
           stabilityBadgeClass = "bg-zen-200 text-zen-700";
-          trajectoryInterpretation = "由於過濾暖身後，有效呼吸數據僅有 1 次，尚無法比對前後半段的演變軌跡。建議下次練習可適度拉長呼吸次數，解鎖更為豐富的時序調節報告！";
+          trajectoryInterpretation = "由於過濾暖身後，有效呼吸數據僅有 1 次，尚無法比對前後半段的演變軌跡。建議下次練習可適度拉長呼吸次數，解鎖更為豐富的自律調節報告！";
         }
 
       } else {
-        // 引導練習完成報告
         const config = guidedMethods[methodId];
         const totalPracticeSecs = 60;
         const syncPercent = Math.max(0, Math.round(((totalPracticeSecs - syncErrorSecs) / totalPracticeSecs) * 100));
@@ -1551,7 +1600,7 @@
 
       // --- 渲染數據至報告頁面 ---
       document.getElementById('result-rr').innerHTML = `${finalRR} <span class="text-xs font-normal">BPM</span>`;
-      document.getElementById('result-ie').innerText = `1:${(1/finalIE).toFixed(1)}`;
+      document.getElementById('result-ie').innerText = `1:${safeToFixed(1/finalIE, 1)}`;
       document.getElementById('result-va').innerHTML = `${finalVA} <span class="text-xs font-normal">L/m</span>`;
       document.getElementById('result-vd-ratio').innerText = `${vdRatio}%`;
       document.getElementById('result-interpretation').innerHTML = interpretation;
@@ -1731,7 +1780,7 @@
           info.className = "flex justify-between font-bold text-zen-700";
           info.innerHTML = `
             <span>呼吸週期 #${idx + 1} (BPM: ${Math.round(b.instant_rr)})</span>
-            <span class="text-zen-500">I:E 吸吐比 = 1 : ${(1/b.ie_ratio).toFixed(1)}</span>
+            <span class="text-zen-500">I:E 吸吐比 = 1 : ${safeToFixed(1/b.ie_ratio, 1)}</span>
           `;
 
           const barContainer = document.createElement('div');
@@ -1832,10 +1881,14 @@
     }
 
     function loadHistoryFromLocal() {
-      const stored = localStorage.getItem('breath_sensing_history');
-      if (stored) {
-        appState.history = JSON.parse(stored);
-      } else {
+      try {
+        const stored = localStorage.getItem('breath_sensing_history');
+        if (stored) {
+          appState.history = JSON.parse(stored);
+        } else {
+          appState.history = [];
+        }
+      } catch (e) {
         appState.history = [];
       }
     }
@@ -1855,7 +1908,7 @@
       container.innerHTML = '';
 
       if (appState.history.length === 0) {
-        container.innerHTML = '<div class="text-center py-8 text-xs text-zen-400">尚未累積任何練習紀錄</div>';
+        container.innerHTML = '<div class="text-center py-8 text-xs text-zen-400">尚未累積 any 練習紀錄</div>';
         return;
       }
 
