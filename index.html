@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-<title>練息場 · 呼吸覺察</title>
+<title>Breeeeeathe~</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
@@ -59,6 +59,9 @@ canvas#waveform{width:100%;height:119px;display:block;border-radius:4px}
 .state-desc-block .state-desc{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:12px}
 .state-desc-block .recommend-title{font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-bottom:8px}
 .state-desc-block .method-tags{display:flex;flex-wrap:wrap;gap:6px}
+.practice-link{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding:12px 14px;background:var(--accent);border-radius:var(--radius-sm);color:#fff;text-decoration:none;font-size:13px;letter-spacing:.02em}
+.practice-link-label{font-family:'DM Serif Display',serif;font-size:15px}
+.practice-link-arrow{font-size:16px;opacity:.8}
 
 .session-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:390px;margin-bottom:16px}
 .state-tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;letter-spacing:.04em}
@@ -134,10 +137,10 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 <body>
 
 <nav>
-  <div class="logo">練息場 <span>Breathe</span></div>
+  <div class="logo"><span>Breeeeeathe~</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('sense')">覺察</button>
-    <button class="nav-tab" onclick="showPage('history')">記錄</button>
+    <button class="nav-tab" onclick="showPage('history')">軌跡</button>
   </div>
 </nav>
 
@@ -191,11 +194,11 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 
 <div id="page-history" class="page">
   <div class="history-header">
-    <div class="history-title">練習記錄</div>
+    <div class="history-title">呼吸軌跡</div>
     <div class="history-sub" id="histSub">載入中…</div>
   </div>
   <div class="compare-section" id="compareSection" style="display:none">
-    <div class="compare-title">BPM 趨勢（近 10 次）</div>
+    <div class="compare-title">BPM 軌跡（近 10 次）</div>
     <canvas id="compareChart"></canvas>
   </div>
   <div id="sessionList"></div>
@@ -226,12 +229,30 @@ function ev(e){e.preventDefault()}
 
 // ── STATE DEFS ──
 const STATES={
-  deep:{label:'深度放鬆',cls:'deep',desc:'呼吸非常緩慢而穩定，副交感神經非常活躍——身體正在修復與沉澱。你已經在一個很好的地方了。',methods:['維持當前節奏','延伸練習：4-7-8 法','記錄此刻感受']},
-  calm:{label:'平靜放鬆',cls:'calm',desc:'呼吸落在共振呼吸區間，吐氣略長於吸氣，副交感活性良好。這是練習最容易維持的良好狀態。',methods:['共振呼吸（6 BPM）','延長吐氣法','維持練習']},
-  neutral:{label:'平衡中性',cls:'neutral',desc:'呼吸頻率與吸吐比均在正常靜息範圍，身心大致平衡，適合開始引導練習。',methods:['Box Breathing（4:4:4:4）','共振呼吸引導','自由選擇練習']},
-  tense:{label:'輕度緊繃',cls:'tense',desc:'呼吸頻率偏快，交感神經活性上升。也許剛結束忙碌，或心裡有些事還沒放下。試著把吐氣慢慢拉長。',methods:['4-7-8 呼吸法','延長吐氣（1:2 比例）','先穩定節律再降頻率']},
-  anxiety:{label:'明顯過亢',cls:'anxiety',desc:'呼吸頻率快且吸氣比例偏重，交感神經顯著激活。不用急著改變——先從一口長長的吐氣開始。',methods:['Cyclic Sighing（雙吸一長吐）','4-7-8（緩進）','先吐一口長氣再開始']},
-  fatigue:{label:'疲勞耗竭',cls:'fatigue',desc:'呼吸頻率偏快但節律不穩定，可能是身體疲勞時的代償反應。讓每次呼吸的長度變得一致就好。',methods:['Box Breathing（穩定節律）','等長呼吸 4:4:4:4','避免過度深呼吸']}
+  deep:{label:'深度舒緩',cls:'deep',
+    desc:'你的呼吸節奏很慢，且吐氣時間偏長。這個模式傾向於讓身體進入較為放鬆的狀態，可以繼續維持，或試著覺察當下的感受。',
+    methods:['維持當前節奏','延伸練習：4-7-8 法','記錄此刻感受'],
+    practice:'478', practiceName:'4-7-8 呼吸'},
+  calm:{label:'平穩舒緩',cls:'calm',
+    desc:'你的呼吸頻率和節奏落在比較平穩的區間，吐氣略長於吸氣。這個模式有助於身體維持在放鬆狀態，是不錯的起點。',
+    methods:['共振呼吸（6 BPM）','延長吐氣練習','維持目前節奏'],
+    practice:'xiangzhen', practiceName:'諧振呼吸'},
+  neutral:{label:'平衡穩定',cls:'neutral',
+    desc:'你的呼吸頻率與吸吐時間大致均衡，節律也算穩定。這是一個中性的基準狀態，適合開始有意識的練習。',
+    methods:['等長呼吸（4:4:4:4）','共振呼吸引導','自由選擇練習'],
+    practice:'box', practiceName:'箱式呼吸'},
+  tense:{label:'略顯急促',cls:'tense',
+    desc:'你的呼吸頻率偏快，或吸氣比例略重。這個模式可能反映輕微的緊繃或注意力集中的狀態，不一定代表問題——試著有意識地把吐氣稍微拉長看看。',
+    methods:['4-7-8 呼吸法','延長吐氣（1:2 比例）','先穩定節律再放慢'],
+    practice:'sighing', practiceName:'生理嘆氣'},
+  anxiety:{label:'明顯急促',cls:'anxiety',
+    desc:'你的呼吸頻率較快，吸氣比例偏重。這個模式在緊張、專注或壓力下很常見。不用強迫改變——先讓自己自然地吐一口長氣，再慢慢調整。',
+    methods:['Cyclic Sighing（雙吸一長吐）','4-7-8（緩進版）','先吐一口長氣'],
+    practice:'sighing', practiceName:'生理嘆氣'},
+  fatigue:{label:'節律不穩',cls:'fatigue',
+    desc:'你的呼吸頻率偏快且每次長短不太一致。這個模式在疲勞或分心時常會出現。不需要深呼吸，只要試著讓每次呼吸的長度稍微接近就好。',
+    methods:['等長呼吸（4:4:4:4）','Box Breathing 穩定節律','避免過度深呼吸'],
+    practice:'box', practiceName:'箱式呼吸'}
 };
 
 function classify(bpm,ie,stability){
@@ -550,6 +571,16 @@ function updateLiveStats(){
     document.getElementById('stateTag').className='state-tag '+s.cls;
     document.getElementById('stateDesc').textContent=s.desc;
     document.getElementById('methodTags').innerHTML=s.methods.map(m=>`<span class="method-tag">${m}</span>`).join('');
+    // 前往小憩練習的連結（防止重複插入）
+    const existingLink=document.querySelector('.practice-link');
+    if(existingLink) existingLink.remove();
+    const xiaoqiURL=`https://flow222git.github.io/jte-xiaoqi-2026/?practice=${s.practice}`;
+    document.getElementById('methodTags').insertAdjacentHTML('afterend',
+      `<a class="practice-link" href="${xiaoqiURL}" target="_blank">
+        <span>現在就去練習</span>
+        <span class="practice-link-label">${s.practiceName} →</span>
+      </a>`
+    );
     block.style.display='block';
   }
 }
@@ -735,7 +766,7 @@ function trajHTML(traj){
 function renderHistory(){
   const history=getHistory();
   document.getElementById('histSub').textContent=
-    history.length>0?`共 ${history.length} 次練習紀錄`:'還沒有練習紀錄';
+    history.length>0?`共 ${history.length} 次練習軌跡`:'還沒有練習紀錄';
   const list=document.getElementById('sessionList');
   const cmp=document.getElementById('compareSection');
 
