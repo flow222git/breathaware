@@ -38,36 +38,37 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .orb-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid rgba(42,107,90,.2);animation:ring-pulse 3s ease-in-out infinite}
 .orb-ring2{position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(42,107,90,.1);animation:ring-pulse 3s ease-in-out infinite .6s}
 @keyframes ring-pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
-.orb-inner{text-align:center;pointer-events:none}
-.orb-main{font-family:'DM Serif Display',serif;font-size:16px;color:rgba(255,255,255,.9);letter-spacing:.04em}
-.orb-sub{font-size:13px;color:rgba(255,255,255,.6);margin-top:5px}
+.orb-idle{text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:10px}
+.orb-idle-main{font-family:'DM Serif Display',serif;font-size:22px;color:rgba(255,255,255,.88);letter-spacing:.03em}
+.orb-idle-divider{width:32px;height:1px;background:rgba(255,255,255,.3)}
+.orb-active{width:90%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
+canvas#waveform{width:100%;height:119px;display:block;border-radius:4px}
+.orb-phase-row{display:flex;flex-direction:column;align-items:center;gap:4px}
+.orb-phase-label{font-family:'DM Serif Display',serif;font-size:28px;color:rgba(255,255,255,.88);letter-spacing:.03em}
+.orb-state-name{font-size:14px;color:rgba(255,255,255,.55);letter-spacing:.05em;min-height:0;transition:opacity .4s}
+.orb-state-name:empty{display:none}
 .orb.pressed{transform:scale(1.04);box-shadow:0 12px 60px rgba(42,107,90,.3),0 4px 16px rgba(42,107,90,.15)}
 
-.live-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%;max-width:360px;margin-bottom:20px}
+.live-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%;max-width:390px;margin-bottom:16px}
 .stat-box{background:var(--paper2);border-radius:var(--radius-sm);padding:12px 10px;text-align:center}
 .stat-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent)}
 .stat-key{font-size:10px;color:var(--ink3);margin-top:2px;letter-spacing:.06em}
 
-.wave-wrap{width:100%;max-width:360px;background:var(--paper2);border-radius:var(--radius-sm);padding:12px;margin-bottom:20px}
-.wave-label{font-size:10px;color:var(--ink3);letter-spacing:.06em;margin-bottom:8px}
-canvas#waveform{width:100%;height:60px;display:block}
+.state-desc-block{width:100%;max-width:390px;padding:16px 18px;background:var(--paper2);border-radius:var(--radius);margin-bottom:16px}
+.state-desc-block .state-tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;margin-bottom:8px;letter-spacing:.04em}
+.state-desc-block .state-desc{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:12px}
+.state-desc-block .recommend-title{font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-bottom:8px}
+.state-desc-block .method-tags{display:flex;flex-wrap:wrap;gap:6px}
 
-.state-result{width:100%;max-width:360px;border:1px solid var(--paper3);border-radius:var(--radius);padding:18px;background:var(--paper);margin-bottom:16px;opacity:0;transform:translateY(6px);transition:all .4s}
-.state-result.visible{opacity:1;transform:none}
-.state-tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;margin-bottom:10px;letter-spacing:.04em}
+.session-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:390px;margin-bottom:16px}
+.state-tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;letter-spacing:.04em}
 .state-tag.calm{background:#e1f5ee;color:#085041}
 .state-tag.neutral{background:#ede9e3;color:#444}
 .state-tag.tense{background:#faeeda;color:#5a3200}
 .state-tag.anxiety{background:#faece7;color:#5a1e0a}
 .state-tag.fatigue{background:#e6f1fb;color:#0c3558}
 .state-tag.deep{background:#eeedfe;color:#26215c}
-.state-name{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px}
-.state-desc{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:14px}
-.recommend-title{font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-bottom:8px}
-.method-tags{display:flex;flex-wrap:wrap;gap:6px}
 .method-tag{font-size:12px;padding:4px 11px;border-radius:12px;background:var(--paper2);color:var(--ink2);border:1px solid var(--paper3)}
-
-.session-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:360px;margin-bottom:16px}
 .timer-display{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink2)}
 .stop-btn{font-size:12px;padding:8px 20px;border-radius:20px;background:var(--ink);color:var(--paper);border:none;font-family:inherit;cursor:pointer;letter-spacing:.04em;opacity:0;pointer-events:none;transition:opacity .3s}
 .stop-btn.show{opacity:1;pointer-events:auto}
@@ -141,41 +142,50 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 </nav>
 
 <div id="page-sense" class="page active">
-  <div class="status-chip" id="statusChip">準備好了，按住開始</div>
+  <div class="status-chip" id="statusChip"></div>
+
+  <!-- 圓圈在最上方 -->
   <div class="orb-wrap">
     <div class="orb-ring"></div><div class="orb-ring2"></div>
     <div class="orb" id="orb"
       onmousedown="startInhale()" onmouseup="startExhale()"
       ontouchstart="ev(event);startInhale()" ontouchend="ev(event);startExhale()">
-      <div class="orb-inner">
-        <div class="orb-main" id="orbMain">按住吸氣</div>
-        <div class="orb-sub" id="orbSub">放開吐氣</div>
+      <!-- 初始說明 -->
+      <div class="orb-idle" id="orbIdle">
+        <div class="orb-idle-main">吸氣時按住</div>
+        <div class="orb-idle-divider"></div>
+        <div class="orb-idle-main">吐氣時放開</div>
+      </div>
+      <!-- 練習中：波形置中 + 相位文字 + 狀態標題（有值才顯示）-->
+      <div class="orb-active" id="orbActive" style="display:none">
+        <canvas id="waveform"></canvas>
+        <div class="orb-phase-row">
+          <div class="orb-phase-label" id="orbMain">吸氣中</div>
+          <div class="orb-state-name" id="orbStateName"></div>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- 計時 + 結束 -->
   <div class="session-bar">
     <div class="timer-display" id="timerDisplay">0:00</div>
     <button class="stop-btn" id="stopBtn" onclick="endSession()">結束練習</button>
   </div>
 
+  <!-- 狀態說明（圓圈下方）-->
+  <div class="state-desc-block" id="stateDescBlock" style="display:none">
+    <div class="state-tag" id="stateTag">—</div>
+    <div class="state-desc" id="stateDesc">—</div>
+    <div class="recommend-title">建議呼吸法</div>
+    <div class="method-tags" id="methodTags"></div>
+  </div>
+
+  <!-- 數據在最下方 -->
   <div class="live-stats">
     <div class="stat-box"><div class="stat-val" id="statBPM">—</div><div class="stat-key">BPM</div></div>
     <div class="stat-box"><div class="stat-val" id="statIE">—</div><div class="stat-key">吸：吐</div></div>
     <div class="stat-box"><div class="stat-val" id="statCount">0</div><div class="stat-key">呼吸次數</div></div>
-  </div>
-
-  <div class="wave-wrap">
-    <div class="wave-label">REAL-TIME WAVEFORM</div>
-    <canvas id="waveform"></canvas>
-  </div>
-
-  <div class="state-result" id="stateResult">
-    <div class="state-tag" id="stateTag">—</div>
-    <div class="state-name" id="stateName">—</div>
-    <div class="state-desc" id="stateDesc">—</div>
-    <div class="recommend-title">建議呼吸法</div>
-    <div class="method-tags" id="methodTags"></div>
   </div>
 </div>
 
@@ -463,6 +473,10 @@ function startInhale(){
     sessionActive=true;sessionStart=Date.now();
     document.getElementById('stopBtn').classList.add('show');
     timerInterval=setInterval(updateTimer,1000);
+    // 第一次按下：切換圓圈內容
+    document.getElementById('orbIdle').style.display='none';
+    document.getElementById('orbActive').style.display='flex';
+    resizeWave();
   }
 
   // 結算上一次吐氣
@@ -478,7 +492,6 @@ function startInhale(){
   pressing=true;pressStart=Date.now();currentPhase='inhaling';
   document.getElementById('orb').classList.add('pressed');
   document.getElementById('orbMain').textContent='吸氣中';
-  document.getElementById('orbSub').textContent='放開吐氣';
   const chip=document.getElementById('statusChip');
   chip.textContent='吸氣';chip.className='status-chip inhaling';
   wavePoints.push({t:Date.now()-sessionStart,phase:1});
@@ -497,7 +510,6 @@ function startExhale(){
   currentPhase='exhaling';
   document.getElementById('orb').classList.remove('pressed');
   document.getElementById('orbMain').textContent='吐氣中';
-  document.getElementById('orbSub').textContent='按住吸氣';
   const chip=document.getElementById('statusChip');
   chip.textContent='吐氣';chip.className='status-chip exhaling';
   wavePoints.push({t:Date.now()-sessionStart,phase:0});
@@ -527,13 +539,18 @@ function updateLiveStats(){
   if(breaths.length>=3){
     const key=classify(bpm,ie,stability);
     const s=STATES[key];
-    const res=document.getElementById('stateResult');
+    // 狀態標題寫進圓圈，隱藏吸吐氣文字
+    const orbStateEl=document.getElementById('orbStateName');
+    const orbMainEl=document.getElementById('orbMain');
+    orbStateEl.textContent=s.label;
+    orbMainEl.style.display='none'; // 有狀態後不再顯示「吸氣中／吐氣中」
+    // 說明區塊顯示在圓圈下方
+    const block=document.getElementById('stateDescBlock');
     document.getElementById('stateTag').textContent=s.label;
     document.getElementById('stateTag').className='state-tag '+s.cls;
-    document.getElementById('stateName').textContent=s.label;
     document.getElementById('stateDesc').textContent=s.desc;
     document.getElementById('methodTags').innerHTML=s.methods.map(m=>`<span class="method-tag">${m}</span>`).join('');
-    res.classList.add('visible');
+    block.style.display='block';
   }
 }
 
@@ -557,22 +574,19 @@ function drawWave(){
   }
   const lastP=visible[visible.length-1];
   waveCtx.lineTo(W,pressing?H*.15:H*.85);
-  waveCtx.strokeStyle=pressing?'#2a6b5a':'#4a9b84';
+  waveCtx.strokeStyle='rgba(255,255,255,.85)';
   waveCtx.lineWidth=2*devicePixelRatio;waveCtx.lineCap='round';waveCtx.stroke();
   waveCtx.lineTo(W,H);
   const firstVis=visible.find(p=>p.t>=startT);
   waveCtx.lineTo(((firstVis?firstVis.t:startT)-startT)/windowMs*W,H);
   waveCtx.closePath();
-  waveCtx.fillStyle=pressing?'rgba(42,107,90,.10)':'rgba(74,155,132,.07)';
+  waveCtx.fillStyle='rgba(255,255,255,.08)';
   waveCtx.fill();
-  waveCtx.fillStyle='rgba(100,100,100,.3)';
+  waveCtx.fillStyle='rgba(255,255,255,.25)';
   for(let t=Math.ceil(startT/5000)*5000;t<=now;t+=5000){
     const x=((t-startT)/windowMs)*W;
-    waveCtx.fillRect(x,H-4*devicePixelRatio,devicePixelRatio,4*devicePixelRatio);
+    waveCtx.fillRect(x,H-3*devicePixelRatio,devicePixelRatio,3*devicePixelRatio);
   }
-  waveCtx.font=`${9*devicePixelRatio}px 'DM Sans',sans-serif`;
-  waveCtx.fillStyle='rgba(42,107,90,.6)';waveCtx.fillText('吸',4*devicePixelRatio,H*.2);
-  waveCtx.fillStyle='rgba(100,140,120,.5)';waveCtx.fillText('吐',4*devicePixelRatio,H*.9);
   waveRAF=requestAnimationFrame(drawWave);
 }
 
@@ -593,11 +607,9 @@ function endSession(){
   sessionActive=false;clearInterval(timerInterval);
   cancelAnimationFrame(waveRAF);waveRAF=null;
   document.getElementById('orb').classList.remove('pressed');
-  document.getElementById('orbMain').textContent='按住吸氣';
-  document.getElementById('orbSub').textContent='放開吐氣';
   document.getElementById('statusChip').className='status-chip';
   document.getElementById('statusChip').textContent='練習完成';
-  stopOrgan(600); // 緩慢淡出
+  stopOrgan(600);
   document.getElementById('feelingModal').classList.add('open');
 }
 
@@ -650,10 +662,16 @@ function resetSession(){
   document.getElementById('statBPM').textContent='—';
   document.getElementById('statIE').textContent='—';
   document.getElementById('statCount').textContent='0';
-  document.getElementById('stateResult').classList.remove('visible');
+  document.getElementById('stateDescBlock').style.display='none';
+  document.getElementById('orbStateName').textContent='';
   document.getElementById('stopBtn').classList.remove('show');
-  document.getElementById('statusChip').textContent='準備好了，按住開始';
+  document.getElementById('statusChip').textContent='';
   document.getElementById('statusChip').className='status-chip';
+  // 恢復圓圈初始狀態
+  document.getElementById('orbIdle').style.display='flex';
+  document.getElementById('orbActive').style.display='none';
+  document.getElementById('orbMain').textContent='吸氣中';
+  document.getElementById('orbMain').style.display='';
   waveCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
   resetOrbColor();
 }
