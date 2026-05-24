@@ -1,2001 +1,948 @@
 <!DOCTYPE html>
-<html lang="zh-TW" class="h-full">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>BreathSensing 呼吸覺察與生理狀態判讀系統</title>
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            zen: {
-              50: '#F5F5F0',
-              100: '#EAEAE0',
-              200: '#D5D5C0',
-              300: '#B0B59E',
-              400: '#8E947A',
-              500: '#6E755D',
-              600: '#555C47',
-              700: '#3D4233',
-              800: '#262920',
-              900: '#141712',
-              accent: '#C2A687'
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    /* 防止長按選單與選取干擾 */
-    .touch-area {
-      -webkit-touch-callout: none;
-      -webkit-user-select: none;
-      user-select: none;
-      touch-action: none;
-    }
-    .custom-scroll::-webkit-scrollbar {
-      width: 4px;
-    }
-    .custom-scroll::-webkit-scrollbar-track {
-      background: rgba(0, 0, 0, 0.05);
-    }
-    .custom-scroll::-webkit-scrollbar-thumb {
-      background: rgba(110, 117, 93, 0.3);
-      border-radius: 4px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>練息場 · 呼吸覺察</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1a1a;--ink2:#555;--ink3:#999;
+  --paper:#f5f3ef;--paper2:#ede9e3;--paper3:#e4dfd7;
+  --accent:#2a6b5a;--accent2:#4a9b84;
+  --warm:#c85d3a;--warm2:#e8845f;
+  --radius:16px;--radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--paper);font-family:'DM Sans',sans-serif;color:var(--ink)}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--paper);border-bottom:1px solid var(--paper3)}
+.logo{font-family:'DM Serif Display',serif;font-size:17px;letter-spacing:.02em}
+.logo span{color:var(--accent);font-style:italic}
+.nav-tabs{display:flex;gap:2px;background:var(--paper2);border-radius:20px;padding:3px}
+.nav-tab{font-size:12px;padding:5px 14px;border-radius:16px;cursor:pointer;transition:all .2s;color:var(--ink3);border:none;background:none;font-family:inherit}
+.nav-tab.active{background:var(--paper);color:var(--ink);box-shadow:0 1px 4px rgba(0,0,0,.08)}
+
+.page{position:fixed;inset:56px 0 0;overflow-y:auto;display:block;visibility:hidden;opacity:0;pointer-events:none}
+.page.active{visibility:visible;opacity:1;pointer-events:auto}
+
+/* SENSE */
+#page-sense{display:flex;flex-direction:column;align-items:center;padding:24px 20px 100px;gap:0}
+.status-chip{display:none}
+.orb-main{font-family:'DM Serif Display',serif;font-size:32px;color:rgba(255,255,255,.9);letter-spacing:.04em}
+.orb-sub{font-size:20px;color:rgba(255,255,255,.6);margin-top:5px}
+
+.orb-wrap{position:relative;width:390px;height:390px;margin-bottom:20px}
+.orb{width:390px;height:390px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#7db8a8,#2a6b5a);cursor:pointer;user-select:none;transition:transform .15s ease,box-shadow .3s ease;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 40px rgba(42,107,90,.18),0 2px 8px rgba(42,107,90,.1);position:relative;z-index:2}
+.orb-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid rgba(42,107,90,.2);animation:ring-pulse 3s ease-in-out infinite}
+.orb-ring2{position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(42,107,90,.1);animation:ring-pulse 3s ease-in-out infinite .6s}
+@keyframes ring-pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
+.orb-inner{text-align:center;pointer-events:none}
+.orb-main{font-family:'DM Serif Display',serif;font-size:16px;color:rgba(255,255,255,.9);letter-spacing:.04em}
+.orb-sub{font-size:13px;color:rgba(255,255,255,.6);margin-top:5px}
+.orb.pressed{transform:scale(1.04);box-shadow:0 12px 60px rgba(42,107,90,.3),0 4px 16px rgba(42,107,90,.15)}
+
+.live-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;width:100%;max-width:360px;margin-bottom:20px}
+.stat-box{background:var(--paper2);border-radius:var(--radius-sm);padding:12px 10px;text-align:center}
+.stat-val{font-family:'DM Serif Display',serif;font-size:22px;color:var(--accent)}
+.stat-key{font-size:10px;color:var(--ink3);margin-top:2px;letter-spacing:.06em}
+
+.wave-wrap{width:100%;max-width:360px;background:var(--paper2);border-radius:var(--radius-sm);padding:12px;margin-bottom:20px}
+.wave-label{font-size:10px;color:var(--ink3);letter-spacing:.06em;margin-bottom:8px}
+canvas#waveform{width:100%;height:60px;display:block}
+
+.state-result{width:100%;max-width:360px;border:1px solid var(--paper3);border-radius:var(--radius);padding:18px;background:var(--paper);margin-bottom:16px;opacity:0;transform:translateY(6px);transition:all .4s}
+.state-result.visible{opacity:1;transform:none}
+.state-tag{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;margin-bottom:10px;letter-spacing:.04em}
+.state-tag.calm{background:#e1f5ee;color:#085041}
+.state-tag.neutral{background:#ede9e3;color:#444}
+.state-tag.tense{background:#faeeda;color:#5a3200}
+.state-tag.anxiety{background:#faece7;color:#5a1e0a}
+.state-tag.fatigue{background:#e6f1fb;color:#0c3558}
+.state-tag.deep{background:#eeedfe;color:#26215c}
+.state-name{font-family:'DM Serif Display',serif;font-size:20px;margin-bottom:6px}
+.state-desc{font-size:13px;color:var(--ink2);line-height:1.65;margin-bottom:14px}
+.recommend-title{font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-bottom:8px}
+.method-tags{display:flex;flex-wrap:wrap;gap:6px}
+.method-tag{font-size:12px;padding:4px 11px;border-radius:12px;background:var(--paper2);color:var(--ink2);border:1px solid var(--paper3)}
+
+.session-bar{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:360px;margin-bottom:16px}
+.timer-display{font-family:'DM Serif Display',serif;font-size:28px;color:var(--ink2)}
+.stop-btn{font-size:12px;padding:8px 20px;border-radius:20px;background:var(--ink);color:var(--paper);border:none;font-family:inherit;cursor:pointer;letter-spacing:.04em;opacity:0;pointer-events:none;transition:opacity .3s}
+.stop-btn.show{opacity:1;pointer-events:auto}
+
+/* HISTORY */
+#page-history{padding:24px 20px 80px}
+.history-header{margin-bottom:20px}
+.history-title{font-family:'DM Serif Display',serif;font-size:24px;margin-bottom:4px}
+.history-sub{font-size:13px;color:var(--ink3)}
+
+.session-card{background:var(--paper2);border-radius:var(--radius);padding:16px 18px;margin-bottom:12px;border:1px solid transparent;transition:border-color .2s}
+.session-card:hover{border-color:var(--paper3)}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.sc-date{font-size:12px;color:var(--ink3)}
+.sc-state{font-size:13px;font-weight:500;margin-top:2px}
+.sc-metrics{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:10px}
+.sc-metric{font-size:12px;color:var(--ink2)}
+.sc-metric span{font-weight:500;color:var(--ink)}
+.mini-wave{width:100%;height:36px;display:block}
+.sc-feeling{font-size:12px;color:var(--ink3);margin-top:8px;font-style:italic}
+
+/* TRAJECTORY ANALYSIS */
+.traj-box{background:var(--paper);border:1px solid var(--paper3);border-radius:var(--radius);padding:16px 18px;margin-top:12px}
+.traj-title{font-size:10px;color:var(--ink3);letter-spacing:.08em;margin-bottom:12px}
+.traj-phases{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.traj-phase{background:var(--paper2);border-radius:var(--radius-sm);padding:10px 8px;text-align:center}
+.traj-phase-label{font-size:9px;color:var(--ink3);letter-spacing:.06em;margin-bottom:4px}
+.traj-phase-bpm{font-family:'DM Serif Display',serif;font-size:18px;color:var(--accent)}
+.traj-phase-ie{font-size:10px;color:var(--ink3);margin-top:2px}
+.traj-arrow{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px}
+.traj-arrow-line{flex:1;height:1px;background:var(--paper3)}
+.traj-arrow-label{font-size:11px;color:var(--ink2);white-space:nowrap}
+.traj-arrow-dir{font-size:14px}
+.traj-findings{border-top:1px solid var(--paper3);padding-top:12px}
+.traj-finding{display:flex;gap:10px;margin-bottom:8px;align-items:flex-start}
+.traj-finding:last-child{margin-bottom:0}
+.traj-icon{font-size:13px;margin-top:1px;flex-shrink:0}
+.traj-text{font-size:13px;color:var(--ink2);line-height:1.55}
+.traj-text strong{color:var(--ink);font-weight:500}
+
+/* COMPARE */
+.compare-section{margin-bottom:20px}
+.compare-title{font-size:14px;font-weight:500;margin-bottom:12px}
+canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--radius-sm);background:var(--paper2)}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(26,26,26,.5);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .3s}
+.modal-overlay.open{opacity:1;pointer-events:auto}
+.modal-sheet{background:var(--paper);border-radius:24px 24px 0 0;padding:28px 24px 40px;width:100%;max-width:480px;transform:translateY(40px);transition:transform .35s ease}
+.modal-overlay.open .modal-sheet{transform:none}
+.modal-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:6px}
+.modal-sub{font-size:13px;color:var(--ink3);margin-bottom:20px}
+.feeling-options{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px}
+.feeling-opt{font-size:13px;padding:8px 16px;border-radius:20px;border:1.5px solid var(--paper3);background:var(--paper2);cursor:pointer;transition:all .15s;user-select:none}
+.feeling-opt.selected{border-color:var(--accent);background:#e1f5ee;color:var(--accent)}
+.feeling-note{width:100%;border:1px solid var(--paper3);border-radius:var(--radius-sm);background:var(--paper2);padding:12px;font-family:inherit;font-size:13px;color:var(--ink);resize:none;outline:none;margin-bottom:16px}
+.save-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;font-family:inherit;font-size:15px;cursor:pointer;letter-spacing:.02em}
+
+.empty-state{text-align:center;padding:60px 20px;color:var(--ink3)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4}
+</style>
 </head>
-<body class="bg-zen-50 text-zen-900 h-full font-sans antialiased overflow-hidden flex flex-col">
+<body>
 
-  <!-- 全局通知 Toast -->
-  <div id="toast" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-zen-800 text-zen-50 px-4 py-2.5 rounded-full text-sm font-medium shadow-xl opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center space-x-2">
-    <i data-lucide="info" class="w-4 h-4 text-zen-accent"></i>
-    <span id="toast-text">提示文字</span>
+<nav>
+  <div class="logo">練息場 <span>Breathe</span></div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showPage('sense')">覺察</button>
+    <button class="nav-tab" onclick="showPage('history')">記錄</button>
   </div>
+</nav>
 
-  <!-- 主容器 -->
-  <main class="flex-1 max-w-md w-full mx-auto bg-white shadow-2xl relative flex flex-col overflow-hidden h-full">
-
-    <!-- 0. 安全守則 & 年齡篩選 (Age Gate) -->
-    <section id="screen-gate" class="absolute inset-0 bg-zen-900 text-zen-50 z-50 flex flex-col justify-between p-6 transition-transform duration-500">
-      <div class="flex-1 flex flex-col justify-center items-center text-center space-y-6">
-        <div class="w-16 h-16 bg-zen-800 rounded-full flex items-center justify-center border border-zen-700">
-          <i data-lucide="shield-alert" class="w-8 h-8 text-zen-accent"></i>
-        </div>
-        <h1 class="text-2xl font-bold tracking-wider">醫學防護與免責聲明</h1>
-        <div class="bg-zen-800/80 p-5 rounded-2xl text-left text-xs space-y-3 leading-relaxed max-h-[60vh] overflow-y-auto custom-scroll text-zen-300">
-          <p class="font-bold text-zen-200 text-sm">💡 重要臨床安全提示：</p>
-          <p>1. 本網頁應用程式為基於自發性觸控事件的「身心放鬆覺察工具」，<strong>不可替代臨床醫學診斷、監測或醫療決策</strong>。</p>
-          <p>2. <strong>血氧 (SpO2) 盲區警告</strong>：正常 SpO2 不代表通氣充足。補氧病人常會延後發現通氣不足，本網站無法讀取血氧或動脈血氣。</p>
-          <p>3. <strong>病理排他性</strong>：若您有慢性阻塞性肺病 (COPD)、氣喘、重症肺病，或正在接受吸氧治療，請遵循專業醫師處方，勿強行改變正常呼吸模式。</p>
-          <p>4. <strong>兒童限制</strong>：兒童生理呼吸速率與潮氣量正常範圍與成人顯著不同，本網頁之推理模型僅適用於18歲以上成人。</p>
-        </div>
-        <p class="text-sm text-zen-400">您是否已滿 18 歲，且理解並同意上述安全須知？</p>
-      </div>
-      <div class="grid grid-cols-2 gap-4">
-        <button onclick="rejectGate()" class="py-3.5 border border-zen-700 rounded-xl text-sm font-semibold hover:bg-zen-800 active:scale-95 transition-all text-zen-400">拒絕 / 未滿18</button>
-        <button onclick="acceptGate()" class="py-3.5 bg-zen-accent hover:bg-zen-accent/90 text-zen-900 rounded-xl text-sm font-bold active:scale-95 transition-all shadow-lg shadow-zen-accent/20">同意並開始</button>
-      </div>
-    </section>
-
-    <!-- 1. 新手導覽 (Onboarding) -->
-    <section id="screen-intro" class="absolute inset-0 bg-zen-50 z-40 flex flex-col justify-between p-6 transition-transform duration-500 hidden">
-      <div class="flex-1 flex flex-col justify-center items-center text-center space-y-8">
-        <div class="space-y-2">
-          <p class="text-xs font-semibold uppercase tracking-widest text-zen-500">Welcome to BreathSensing</p>
-          <h2 class="text-3xl font-extrabold text-zen-800">觸控呼吸覺察</h2>
-        </div>
-        <div class="w-48 h-48 relative flex items-center justify-center">
-          <div class="absolute inset-0 rounded-full border border-zen-300 animate-ping opacity-25"></div>
-          <div class="absolute w-36 h-36 rounded-full border border-zen-400/50 animate-pulse flex items-center justify-center">
-            <i data-lucide="hand" class="w-16 h-16 text-zen-500"></i>
-          </div>
-        </div>
-        <div class="space-y-3 max-w-xs text-sm text-zen-600 leading-relaxed">
-          <div class="flex items-start space-x-3 text-left">
-            <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">1</span>
-            <p><strong>按住螢幕：</strong> 代表您正在「吸氣」（將播放溫暖管風琴 G 音）</p>
-          </div>
-          <div class="flex items-start space-x-3 text-left">
-            <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">2</span>
-            <p><strong>放開螢幕：</strong> 代表您正在「吐氣」（將播放沉靜管風琴 C 音）</p>
-          </div>
-          <div class="flex items-start space-x-3 text-left">
-            <span class="w-5 h-5 bg-zen-200 rounded-full flex items-center justify-center text-xs font-bold text-zen-700 mt-0.5">3</span>
-            <p>引導中的「憋氣」階段將自動靜音，以便您閉上眼睛，在寂靜中與自我的呼吸同頻諧振。</p>
-          </div>
-        </div>
-      </div>
-      <button onclick="nextToIntro()" class="w-full py-4 bg-zen-600 hover:bg-zen-700 text-white rounded-xl font-bold shadow-md active:scale-95 transition-all flex items-center justify-center space-x-2">
-        <span>理解了，下一步</span>
-        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-      </button>
-    </section>
-
-    <!-- 主頁頂部狀態欄 (App Header) -->
-    <header class="h-16 border-b border-zen-100 flex items-center justify-between px-4 bg-white shrink-0 z-30">
-      <div class="flex items-center space-x-2">
-        <div class="w-8 h-8 bg-zen-100 rounded-lg flex items-center justify-center">
-          <i data-lucide="wind" class="w-5 h-5 text-zen-500"></i>
-        </div>
-        <span class="font-extrabold text-zen-800 tracking-wider text-base">BreathSensing</span>
-      </div>
-      <div class="flex items-center space-x-1">
-        <!-- 音效引導開關 -->
-        <button id="btn-sound-toggle" onclick="toggleSound()" class="p-2 text-zen-600 hover:bg-zen-50 rounded-lg relative" title="切換音效引導">
-          <i id="sound-icon" data-lucide="volume-2" class="w-5 h-5"></i>
-        </button>
-        <button id="btn-history" onclick="changeScreen('history')" class="p-2 text-zen-600 hover:bg-zen-50 rounded-lg relative">
-          <i data-lucide="bar-chart-3" class="w-5 h-5"></i>
-        </button>
-      </div>
-    </header>
-
-    <!-- 2. 主功能選擇 (Mode Selection) -->
-    <section id="screen-select" class="flex-1 flex flex-col justify-between p-6 bg-zen-50/50">
-      <div class="space-y-6">
-        <div class="space-y-1">
-          <h3 class="text-xl font-bold text-zen-800">今天，想如何照顧呼吸？</h3>
-          <p class="text-xs text-zen-500">透過溫和的觸控與音效追蹤，發掘您的生理訊號與狀態</p>
-        </div>
-
-        <!-- 模式卡片 A -->
-        <div onclick="openFreeModeModal()" class="group bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex items-start space-x-4 active:scale-98">
-          <div class="p-3.5 bg-emerald-50 rounded-xl text-emerald-600 group-hover:bg-emerald-100 transition-colors">
-            <i data-lucide="activity" class="w-6 h-6"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex justify-between items-center">
-              <h4 class="font-bold text-zen-800">A. 自由狀態檢測</h4>
-              <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">可選長度</span>
-            </div>
-            <p class="text-xs text-zen-500 mt-1 leading-relaxed">依照您當下的直覺與節律觸壓。可選擇「快速模式」、「深度模式」或新推出「不限時自主模式」，系統會自適應過濾前 2 次雜訊，精準計算您的身心代償機制。</p>
-          </div>
-        </div>
-
-        <!-- 模式卡片 B -->
-        <div onclick="openGuidedSelect()" class="group bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer flex items-start space-x-4 active:scale-98">
-          <div class="p-3.5 bg-amber-50 rounded-xl text-amber-600 group-hover:bg-amber-100 transition-colors">
-            <i data-lucide="compass" class="w-6 h-6"></i>
-          </div>
-          <div class="flex-1">
-            <div class="flex justify-between items-center">
-              <h4 class="font-bold text-zen-800">B. 經典呼吸引導</h4>
-              <i data-lucide="chevron-right" class="w-4 h-4 text-zen-400"></i>
-            </div>
-            <p class="text-xs text-zen-500 mt-1 leading-relaxed">選擇知名的經典功法（如4-7-8、箱型、同頻呼吸）。系統會繪製動態視覺環，帶領您一步步跟隨按壓，完成身心平衡與轉換。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- 安全提醒小底貼 -->
-      <div class="bg-zen-100/50 p-4 rounded-xl flex items-start space-x-3">
-        <i data-lucide="info" class="w-4 h-4 text-zen-600 mt-0.5 shrink-0"></i>
-        <p class="text-[11px] text-zen-600 leading-relaxed">
-          <strong>溫馨提示：</strong> 觸摸時，請保持肩膀放鬆，用單指指腹溫和貼合。若有任何頭暈或過度換氣感，請立即停止，恢復常態呼吸。
-        </p>
-      </div>
-    </section>
-
-    <!-- 自由檢測「快速 vs 深度 vs 不限時」選擇面板 (Modal Drawer) -->
-    <div id="free-mode-modal" class="fixed inset-0 bg-black/60 z-50 flex items-end justify-center transition-all duration-300 pointer-events-none opacity-0">
-      <div class="absolute inset-0" onclick="closeFreeModeModal()"></div>
-      
-      <div class="w-full max-w-md bg-white rounded-t-3xl p-6 space-y-5 transform translate-y-full transition-transform duration-300 z-10">
-        <div class="text-center space-y-1 relative">
-          <div class="w-12 h-1.5 bg-zen-200 rounded-full mx-auto mb-3"></div>
-          <h3 class="text-lg font-bold text-zen-800">請選擇自發呼吸檢測模式</h3>
-          <p class="text-xs text-zen-400">建議選擇至少 6 次以上呼吸，以消除剛開始操作的適應雜訊</p>
-          <button onclick="closeFreeModeModal()" class="absolute right-0 top-0 text-zen-400 hover:text-zen-600 p-1">
-            <i data-lucide="x" class="w-5 h-5"></i>
-          </button>
-        </div>
-
-        <div class="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll pr-1">
-          <!-- 快速模式 -->
-          <div onclick="selectFreeMode('quick', 6)" class="p-3.5 bg-emerald-50/60 border border-emerald-100 hover:border-emerald-300 rounded-2xl cursor-pointer active:scale-98 transition-all flex items-start space-x-3">
-            <div class="p-2 bg-white rounded-xl text-emerald-600 border border-emerald-100 shrink-0">
-              <i data-lucide="zap" class="w-4 h-4"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-xs text-zen-800">快速覺察模式</span>
-                <span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded-full">6 次呼吸</span>
-              </div>
-              <p class="text-[10px] text-zen-500 mt-1 leading-relaxed">
-                適合日常快速檢測。<strong>前 2 次不計入分析</strong>（暖身），後 4 次進行即時剖析。約需 45 秒。
-              </p>
-            </div>
-          </div>
-
-          <!-- 深度模式 -->
-          <div onclick="selectFreeMode('deep', 10)" class="p-3.5 bg-indigo-50/60 border border-indigo-100 hover:border-indigo-300 rounded-2xl cursor-pointer active:scale-98 transition-all flex items-start space-x-3">
-            <div class="p-2 bg-white rounded-xl text-indigo-600 border border-indigo-100 shrink-0">
-              <i data-lucide="sparkles" class="w-4 h-4"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-xs text-zen-800">深度生理評估</span>
-                <span class="text-[9px] bg-indigo-100 text-indigo-800 font-bold px-1.5 py-0.5 rounded-full">10 次呼吸</span>
-              </div>
-              <p class="text-[10px] text-zen-500 mt-1 leading-relaxed">
-                研究時序變異。<strong>前 2 次暖身過濾</strong>，利用後 8 次完整比對「前後半段」調節趨勢與標準差。約需 1.5 分鐘。
-              </p>
-            </div>
-          </div>
-
-          <!-- 不限時自主模式 -->
-          <div onclick="selectFreeMode('unlimited', 999)" class="p-3.5 bg-amber-50/60 border border-amber-100 hover:border-amber-300 rounded-2xl cursor-pointer active:scale-98 transition-all flex items-start space-x-3">
-            <div class="p-2 bg-white rounded-xl text-amber-600 border border-amber-100 shrink-0">
-              <i data-lucide="infinity" class="w-4 h-4"></i>
-            </div>
-            <div class="flex-1 min-w-0">
-              <div class="flex justify-between items-center">
-                <span class="font-bold text-xs text-zen-800">不限時自律覺察</span>
-                <span class="text-[9px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full">手動結束</span>
-              </div>
-              <p class="text-[10px] text-zen-500 mt-1 leading-relaxed">
-                不限時間與次數。<strong>前 2 次暖身過濾</strong>，適合長程靜心。完成 3 次起，點擊「結束並分析」即可獲取多維時序報告。
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div class="bg-zen-50 p-3 rounded-xl text-[10px] text-zen-500 leading-relaxed flex items-start space-x-2 shrink-0">
-          <i data-lucide="shield-check" class="w-4 h-4 text-zen-600 mt-0.5 shrink-0"></i>
-          <span><strong>暖身過濾原理：</strong> 基於觸控心理適應效應，剛開始按壓的前 2 次節奏常因刻意配合而扭曲，自動摒棄雜訊，數據將更具臨床參考意義。</span>
-        </div>
+<div id="page-sense" class="page active">
+  <div class="status-chip" id="statusChip">準備好了，按住開始</div>
+  <div class="orb-wrap">
+    <div class="orb-ring"></div><div class="orb-ring2"></div>
+    <div class="orb" id="orb"
+      onmousedown="startInhale()" onmouseup="startExhale()"
+      ontouchstart="ev(event);startInhale()" ontouchend="ev(event);startExhale()">
+      <div class="orb-inner">
+        <div class="orb-main" id="orbMain">按住吸氣</div>
+        <div class="orb-sub" id="orbSub">放開吐氣</div>
       </div>
     </div>
+  </div>
 
-    <!-- 3. 自由檢測實作 (Free Assessment UI) -->
-    <section id="screen-free-assess" class="absolute inset-0 top-16 bg-white z-20 flex flex-col justify-between hidden">
-      <!-- 頂部引導 -->
-      <div class="p-4 border-b border-zen-50 flex justify-between items-center bg-zen-50/20 shrink-0">
-        <div class="flex items-center space-x-2">
-          <div class="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse"></div>
-          <span class="text-xs font-semibold text-zen-700 animate-pulse" id="free-mode-banner">自由狀態監測</span>
-        </div>
-        <button onclick="exitToSelect()" class="text-xs font-medium text-zen-500 hover:text-zen-700 flex items-center space-x-1">
-          <i data-lucide="x" class="w-4 h-4"></i>
-          <span>結束</span>
-        </button>
-      </div>
+  <div class="session-bar">
+    <div class="timer-display" id="timerDisplay">0:00</div>
+    <button class="stop-btn" id="stopBtn" onclick="endSession()">結束練習</button>
+  </div>
 
-      <!-- 進度與操作指示欄 -->
-      <div class="px-6 py-2.5 flex justify-between items-center shrink-0 border-b border-zen-50/50 bg-white">
-        <div class="flex flex-col space-y-1">
-          <div class="flex space-x-1" id="cycle-dots">
-            <!-- 動態生成循環點 -->
-          </div>
-          <span class="text-[10px] font-medium text-zen-400" id="cycle-count-text">收集進度: 0 / 6 次循環</span>
-        </div>
-        <!-- 手動結算按鈕 -->
-        <button id="btn-manual-stop" onclick="triggerManualStop()" class="hidden text-xs bg-zen-700 hover:bg-zen-800 text-white font-bold px-3.5 py-2 rounded-xl active:scale-95 transition-all shadow-md flex items-center space-x-1">
-          <i data-lucide="activity" class="w-3.5 h-3.5 text-zen-accent"></i>
-          <span>結束並分析</span>
-        </button>
-      </div>
+  <div class="live-stats">
+    <div class="stat-box"><div class="stat-val" id="statBPM">—</div><div class="stat-key">BPM</div></div>
+    <div class="stat-box"><div class="stat-val" id="statIE">—</div><div class="stat-key">吸：吐</div></div>
+    <div class="stat-box"><div class="stat-val" id="statCount">0</div><div class="stat-key">呼吸次數</div></div>
+  </div>
 
-      <!-- 中央流體視覺互動區 -->
-      <div class="flex-1 flex flex-col justify-center items-center relative overflow-hidden">
-        <!-- 背景流動 Canvas -->
-        <canvas id="breath-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+  <div class="wave-wrap">
+    <div class="wave-label">REAL-TIME WAVEFORM</div>
+    <canvas id="waveform"></canvas>
+  </div>
 
-        <!-- 觸碰主按鈕區 -->
-        <div id="touch-pad" class="touch-area z-10 w-64 h-64 rounded-full border-2 border-zen-200/80 bg-zen-50/20 flex flex-col justify-center items-center shadow-inner cursor-pointer transition-all duration-300 select-none">
-          <div id="touch-core" class="w-48 h-48 rounded-full bg-zen-100 flex flex-col justify-center items-center text-center p-4 transition-transform duration-300">
-            <i id="touch-icon" data-lucide="fingerprint" class="w-12 h-12 text-zen-400 mb-2"></i>
-            <span id="touch-prompt" class="text-sm font-bold text-zen-700">長按螢幕：吸氣</span>
-            <span id="touch-subprompt" class="text-[10px] text-zen-400 mt-1">放開螢幕代表：吐氣</span>
-          </div>
-        </div>
+  <div class="state-result" id="stateResult">
+    <div class="state-tag" id="stateTag">—</div>
+    <div class="state-name" id="stateName">—</div>
+    <div class="state-desc" id="stateDesc">—</div>
+    <div class="recommend-title">建議呼吸法</div>
+    <div class="method-tags" id="methodTags"></div>
+  </div>
+</div>
 
-        <!-- 數據面板 -->
-        <div class="mt-6 z-10 grid grid-cols-2 gap-4 w-full px-8 text-center">
-          <div class="bg-zen-50/60 p-2.5 rounded-xl border border-zen-100">
-            <span class="text-[10px] text-zen-500 block">即時呼吸頻率 (BPM)</span>
-            <span id="live-rr" class="text-xl font-bold text-zen-800">--</span>
-          </div>
-          <div class="bg-zen-50/60 p-2.5 rounded-xl border border-zen-100">
-            <span class="text-[10px] text-zen-500 block">吸吐比 (I:E)</span>
-            <span id="live-ie" class="text-xl font-bold text-zen-800">--</span>
-          </div>
-        </div>
-      </div>
+<div id="page-history" class="page">
+  <div class="history-header">
+    <div class="history-title">練習記錄</div>
+    <div class="history-sub" id="histSub">載入中…</div>
+  </div>
+  <div class="compare-section" id="compareSection" style="display:none">
+    <div class="compare-title">BPM 趨勢（近 10 次）</div>
+    <canvas id="compareChart"></canvas>
+  </div>
+  <div id="sessionList"></div>
+</div>
 
-      <!-- 每次呼吸即時波動圖 (Breath-by-breath Visualizer) -->
-      <div class="h-28 border-t border-zen-100 p-3 bg-zen-50/30 flex flex-col justify-between shrink-0">
-        <span class="text-[10px] text-zen-500 font-semibold block">每次呼吸頻率即時軌跡 (BPM)</span>
-        <div class="flex-1 flex items-end space-x-1.5 pt-2" id="breath-chart-bar">
-          <div class="text-center text-xs text-zen-400 w-full py-4">等待開始呼吸...</div>
-        </div>
-      </div>
-    </section>
+<div class="modal-overlay" id="feelingModal">
+  <div class="modal-sheet">
+    <div class="modal-title">練習結束了</div>
+    <div class="modal-sub">說說你現在的感受？</div>
+    <div class="feeling-options" id="feelingOptions">
+      <div class="feeling-opt" onclick="toggleFeeling(this)">輕鬆很多</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">稍微放鬆</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">沒什麼變化</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">還是緊繃</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">有點疲倦</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">更清醒了</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">心跳變慢</div>
+      <div class="feeling-opt" onclick="toggleFeeling(this)">頭腦清晰</div>
+    </div>
+    <textarea class="feeling-note" id="feelingNote" rows="3" placeholder="還有什麼想記錄的？（選填）"></textarea>
+    <button class="save-btn" onclick="saveSession()">儲存這次練習</button>
+  </div>
+</div>
 
-    <!-- 4. 指定練習選擇 (Guided Breathing Selection) -->
-    <section id="screen-guided-select" class="absolute inset-0 top-16 bg-zen-50 z-20 flex flex-col p-6 overflow-y-auto custom-scroll space-y-6 hidden">
-      <div class="flex justify-between items-center">
-        <h3 class="text-xl font-bold text-zen-800">經典呼吸法訓練</h3>
-        <button onclick="exitToSelect()" class="text-xs text-zen-500 hover:text-zen-700">
-          <i data-lucide="arrow-left" class="w-5 h-5"></i>
-        </button>
-      </div>
+<script>
+// ── UTILS ──
+function ev(e){e.preventDefault()}
 
-      <!-- 呼吸功法選項 -->
-      <div class="space-y-4">
-        <!-- 4-7-8 -->
-        <div onclick="selectGuidedMethod('478')" class="bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition-all active:scale-98">
-          <div class="flex justify-between items-start">
-            <span class="px-2.5 py-1 bg-zen-100 text-zen-700 text-[10px] font-bold rounded-full">4 - 7 - 8 秒</span>
-            <span class="text-xs text-zen-500">放鬆與助眠</span>
-          </div>
-          <h4 class="font-bold text-zen-800 text-base mt-2">安神放鬆呼吸法</h4>
-          <p class="text-xs text-zen-500 mt-1 leading-relaxed">
-            來自經典 Pranayama，吸氣 4 秒、憋氣 7 秒、呼氣 8 秒。藉由極致的呼氣延長與憋氣，能強效刺激迷走神經，幫助迅速穩定思緒。
-          </p>
-        </div>
+// ── STATE DEFS ──
+const STATES={
+  deep:{label:'深度放鬆',cls:'deep',desc:'呼吸非常緩慢而穩定，副交感神經非常活躍——身體正在修復與沉澱。你已經在一個很好的地方了。',methods:['維持當前節奏','延伸練習：4-7-8 法','記錄此刻感受']},
+  calm:{label:'平靜放鬆',cls:'calm',desc:'呼吸落在共振呼吸區間，吐氣略長於吸氣，副交感活性良好。這是練習最容易維持的良好狀態。',methods:['共振呼吸（6 BPM）','延長吐氣法','維持練習']},
+  neutral:{label:'平衡中性',cls:'neutral',desc:'呼吸頻率與吸吐比均在正常靜息範圍，身心大致平衡，適合開始引導練習。',methods:['Box Breathing（4:4:4:4）','共振呼吸引導','自由選擇練習']},
+  tense:{label:'輕度緊繃',cls:'tense',desc:'呼吸頻率偏快，交感神經活性上升。也許剛結束忙碌，或心裡有些事還沒放下。試著把吐氣慢慢拉長。',methods:['4-7-8 呼吸法','延長吐氣（1:2 比例）','先穩定節律再降頻率']},
+  anxiety:{label:'明顯過亢',cls:'anxiety',desc:'呼吸頻率快且吸氣比例偏重，交感神經顯著激活。不用急著改變——先從一口長長的吐氣開始。',methods:['Cyclic Sighing（雙吸一長吐）','4-7-8（緩進）','先吐一口長氣再開始']},
+  fatigue:{label:'疲勞耗竭',cls:'fatigue',desc:'呼吸頻率偏快但節律不穩定，可能是身體疲勞時的代償反應。讓每次呼吸的長度變得一致就好。',methods:['Box Breathing（穩定節律）','等長呼吸 4:4:4:4','避免過度深呼吸']}
+};
 
-        <!-- Box Breathing -->
-        <div onclick="selectGuidedMethod('box')" class="bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition-all active:scale-98">
-          <div class="flex justify-between items-start">
-            <span class="px-2.5 py-1 bg-zen-100 text-zen-700 text-[10px] font-bold rounded-full">4 - 4 - 4 - 4 秒</span>
-            <span class="text-xs text-zen-500">減壓與高度專注</span>
-          </div>
-          <h4 class="font-bold text-zen-800 text-base mt-2">箱型呼吸法 (Box Breathing)</h4>
-          <p class="text-xs text-zen-500 mt-1 leading-relaxed">
-            美國海豹部隊常用戰術減壓法。吸、憋、吐、憋各 4 秒。提供穩健而均衡的自主神經調控，能在緊繃環境下維持最高專注與冷靜。
-          </p>
-        </div>
+function classify(bpm,ie,stability){
+  if(bpm<=9&&stability>=40)return'deep';
+  if(bpm>=24&&ie>=1.3)return'anxiety';
+  if(bpm>=18&&ie<1.0&&stability<50)return'fatigue';
+  if(bpm>=18)return'tense';
+  if(bpm>=6&&bpm<=14&&ie<=1.15&&stability>=50)return'calm';
+  if(bpm>14&&bpm<18&&ie>=0.8&&ie<=1.2)return'neutral';
+  if(bpm<=9)return'deep';
+  return'neutral';
+}
 
-        <!-- Coherent -->
-        <div onclick="selectGuidedMethod('coherent')" class="bg-white border border-zen-100 p-5 rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition-all active:scale-98">
-          <div class="flex justify-between items-start">
-            <span class="px-2.5 py-1 bg-zen-100 text-zen-700 text-[10px] font-bold rounded-full">5 - 5 秒</span>
-            <span class="text-xs text-zen-500">最佳通氣效率</span>
-          </div>
-          <h4 class="font-bold text-zen-800 text-base mt-2">同頻諧振呼吸法</h4>
-          <p class="text-xs text-zen-500 mt-1 leading-relaxed">
-            吸氣 5 秒、呼氣 5 秒。使每分鐘呼吸次數降至完美的 6 次。能大幅降低死腔比例 ($VD$)，實現最高效率的肺泡換氣與自律神經諧振。
-          </p>
-        </div>
-      </div>
-    </section>
+// ── TRAJECTORY ANALYSIS ENGINE ──
+function analyzeTrajectory(breaths){
+  if(breaths.length<4) return null;
 
-    <!-- 5. 導引練習中 (Active Guided Practice UI) -->
-    <section id="screen-guided-active" class="absolute inset-0 top-16 bg-white z-20 flex flex-col justify-between hidden">
-      <!-- 頂端欄 -->
-      <div class="p-4 border-b border-zen-50 flex justify-between items-center bg-zen-50/20 shrink-0">
-        <div>
-          <span class="text-xs font-bold text-zen-800" id="guided-method-title">呼吸法</span>
-          <span class="text-[10px] text-zen-400 ml-2" id="guided-method-desc">引導說明</span>
-        </div>
-        <button onclick="exitToSelect()" class="text-xs font-medium text-zen-500 hover:text-zen-700 flex items-center space-x-1">
-          <i data-lucide="x" class="w-4 h-4"></i>
-          <span>結束</span>
-        </button>
-      </div>
+  const n=breaths.length;
+  const third=Math.floor(n/3);
 
-      <!-- 導引環視覺區 -->
-      <div class="flex-1 flex flex-col justify-center items-center relative overflow-hidden">
-        <!-- 背景流動 Canvas -->
-        <canvas id="guided-canvas" class="absolute inset-0 w-full h-full pointer-events-none"></canvas>
+  // split into thirds
+  const early=breaths.slice(0,third);
+  const mid=breaths.slice(third,third*2);
+  const late=breaths.slice(third*2);
 
-        <!-- 導引環本體 -->
-        <div class="relative w-64 h-64 flex items-center justify-center">
-          <!-- 系統引導外環 -->
-          <div id="guide-ring-outer" class="absolute w-56 h-56 rounded-full border-4 border-dashed border-zen-accent/60 transition-transform duration-300"></div>
-          
-          <!-- 系統即時提示內環 -->
-          <div id="guide-ring-inner" class="absolute w-40 h-40 rounded-full bg-zen-100 flex flex-col justify-center items-center text-center transition-all duration-300 shadow-md">
-            <span id="guide-state-text" class="text-lg font-black text-zen-700">準備開始</span>
-            <span id="guide-timer-text" class="text-2xl font-mono font-bold text-zen-600 mt-1">--</span>
-          </div>
+  function phaseStats(arr){
+    const cycles=arr.map(b=>b.inhaleMs+b.exhaleMs);
+    const avgCycle=cycles.reduce((a,b)=>a+b,0)/cycles.length;
+    const bpm=Math.round(60000/avgCycle*10)/10;
+    const avgI=arr.reduce((s,b)=>s+b.inhaleMs,0)/arr.length;
+    const avgE=arr.reduce((s,b)=>s+b.exhaleMs,0)/arr.length;
+    const ie=Math.round(avgI/avgE*100)/100;
+    // coefficient of variation of cycle lengths
+    const mean=cycles.reduce((a,b)=>a+b,0)/cycles.length;
+    const cv=Math.sqrt(cycles.reduce((s,c)=>s+Math.pow(c-mean,2),0)/cycles.length)/mean;
+    // avg inhale duration in seconds
+    const avgInhaleS=Math.round(avgI/100)/10;
+    const avgExhaleS=Math.round(avgE/100)/10;
+    return{bpm,ie,cv,avgInhaleS,avgExhaleS,stability:Math.max(0,Math.min(100,Math.round((1-cv)*100)))};
+  }
 
-          <!-- 同步反饋指示點 -->
-          <div id="sync-feedback" class="absolute -top-6 text-xs bg-zen-800 text-zen-50 px-3 py-1 rounded-full shadow-md font-semibold transition-opacity duration-300 opacity-0">同步度極佳</div>
-        </div>
+  const e=phaseStats(early);
+  const m=phaseStats(mid);
+  const l=phaseStats(late);
 
-        <!-- 使用者觸碰板 -->
-        <div class="w-full px-8 mt-12 z-10 text-center">
-          <div id="guided-touch-pad" class="touch-area w-full py-6 bg-zen-50 hover:bg-zen-100 active:bg-zen-200 border-2 border-dashed border-zen-300 rounded-2xl flex flex-col justify-center items-center cursor-pointer transition-all select-none">
-            <i data-lucide="fingerprint" class="w-8 h-8 text-zen-500 mb-1"></i>
-            <span id="guided-touch-prompt" class="text-xs font-bold text-zen-700">跟隨引導按住：吸氣，放開：呼氣</span>
-          </div>
-        </div>
-      </div>
+  // per-breath data for detailed analysis
+  const allCycles=breaths.map(b=>b.inhaleMs+b.exhaleMs);
+  const allBPMs=allCycles.map(c=>Math.round(60000/c*10)/10);
+  const allIEs=breaths.map(b=>Math.round(b.inhaleMs/b.exhaleMs*100)/100);
 
-      <!-- 下方即時計數 -->
-      <div class="p-4 border-t border-zen-50 bg-zen-50/20 text-center shrink-0">
-        <span class="text-xs font-medium text-zen-500" id="guided-cycles">剩餘時間：60 秒</span>
-      </div>
-    </section>
+  const globalCV=phaseStats(breaths).cv;
 
-    <!-- 6. 主觀感受與報告記錄 (Feedback & Log) -->
-    <section id="screen-feedback" class="absolute inset-0 top-16 bg-white z-20 flex flex-col justify-between p-6 overflow-y-auto custom-scroll hidden">
-      <div class="space-y-6 pb-6">
-        <div class="text-center space-y-2">
-          <span class="text-zen-accent font-bold text-xs uppercase tracking-widest">練習完成報告</span>
-          <h3 class="text-2xl font-black text-zen-800">生理狀態與分析成果</h3>
-          <p class="text-xs text-zen-500">依據自發/引導呼吸之客觀指標演算</p>
-        </div>
+  // ── FINDING RULES ──
+  const findings=[];
 
-        <!-- 【全新升級】身心呼吸表型大勳章 (Medal Card Drawer) -->
-        <div id="phenotype-medal-card" class="bg-gradient-to-br from-zen-800 to-zen-900 rounded-2xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden border border-zen-700">
-          <!-- 裝飾背景星光 -->
-          <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-zen-accent/10 rounded-full blur-2xl"></div>
-          <div class="flex items-center space-x-4">
-            <div id="phenotype-medal-icon" class="w-14 h-14 bg-zen-700 rounded-full flex items-center justify-center border-2 border-zen-accent text-3xl shadow-inner shrink-0">
-              🏆
-            </div>
-            <div class="min-w-0 flex-1">
-              <span class="text-[10px] text-zen-300 tracking-widest uppercase font-bold block">評估身心呼吸表型</span>
-              <h4 id="phenotype-title" class="text-base font-extrabold text-zen-accent truncate">禪定諧振流</h4>
-            </div>
-          </div>
-          <p id="phenotype-long-desc" class="text-xs text-zen-300 leading-relaxed border-t border-zen-700/60 pt-3">
-            身心分析載入中...
-          </p>
-        </div>
+  // 1. BPM trend: early vs late
+  const bpmDrop=e.bpm-l.bpm;
+  const bpmRise=l.bpm-e.bpm;
+  if(bpmDrop>=3){
+    findings.push({
+      icon:'↘',
+      text:`你的呼吸頻率從開始的 <strong>${e.bpm} BPM</strong> 下降到後段的 <strong>${l.bpm} BPM</strong>，減少了 ${bpmDrop.toFixed(1)} 次／分——這是自律神經開始調節的清楚訊號。`
+    });
+  } else if(bpmRise>=3){
+    findings.push({
+      icon:'↗',
+      text:`呼吸頻率從 <strong>${e.bpm} BPM</strong> 上升到 <strong>${l.bpm} BPM</strong>，練習後段反而加快了。可能是專注力分散，或身體正在適應新的節奏。`
+    });
+  } else {
+    findings.push({
+      icon:'→',
+      text:`整體呼吸頻率相當穩定，前段 <strong>${e.bpm} BPM</strong>、後段 <strong>${l.bpm} BPM</strong>，變化幅度在 3 次以內。`
+    });
+  }
 
-        <!-- 生理數據圖表卡片 -->
-        <div class="bg-zen-50/50 rounded-2xl p-4 border border-zen-100 space-y-4">
-          <div class="grid grid-cols-2 gap-3">
-            <div class="bg-white p-3 rounded-xl border border-zen-100">
-              <span class="text-[10px] text-zen-400 block">平均呼吸頻率</span>
-              <span class="text-xl font-extrabold text-zen-800" id="result-rr">14 <span class="text-xs font-normal">BPM</span></span>
-            </div>
-            <div class="bg-white p-3 rounded-xl border border-zen-100">
-              <span class="text-[10px] text-zen-400 block">平均吸吐比 (I:E)</span>
-              <span class="text-xl font-extrabold text-zen-800" id="result-ie">1:1.5</span>
-            </div>
-            <div class="bg-white p-3 rounded-xl border border-zen-100">
-              <span class="text-[10px] text-zen-400 block">估算肺泡通氣 ($VA$)</span>
-              <span class="text-xl font-extrabold text-zen-800" id="result-va">4.2 <span class="text-xs font-normal">L/m</span></span>
-            </div>
-            <div class="bg-white p-3 rounded-xl border border-zen-100">
-              <span class="text-[10px] text-zen-400 block">死腔損耗比例</span>
-              <span class="text-xl font-extrabold text-zen-800" id="result-vd-ratio">30%</span>
-            </div>
-          </div>
+  // 2. Stability trend
+  const stabChange=l.stability-e.stability;
+  if(stabChange>=15){
+    findings.push({
+      icon:'◎',
+      text:`節律穩定度明顯提升：前段 ${e.stability}%，後段 ${l.stability}%。你的呼吸在練習過程中越來越有規律。`
+    });
+  } else if(stabChange<=-15){
+    findings.push({
+      icon:'◌',
+      text:`節律在後段出現較大波動（前段 ${e.stability}%，後段 ${l.stability}%）。這可能是注意力轉移，或呼吸肌開始疲勞的訊號。`
+    });
+  } else if(globalCV>0.3){
+    findings.push({
+      icon:'〜',
+      text:`整體節律變異較大（穩定度 ${Math.round((1-globalCV)*100)}%），每次呼吸的長度起伏明顯。這很常見——呼吸本來就不是機器，覺察本身就是練習。`
+    });
+  }
 
-          <!-- 【全新升級】肺通氣量曲線模擬與吸吐時間分期軸 (Spirogram & Timeline Tag Axis) -->
-          <div class="p-4 bg-white rounded-xl border border-zen-100 space-y-4 shadow-sm">
-            <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
-              <i data-lucide="waves" class="w-4 h-4 text-zen-500"></i>
-              <span class="tracking-wide">肺部通氣模擬與時序分期軸</span>
-            </span>
-            <!-- 肺通氣模擬曲線 -->
-            <div class="h-32 w-full relative">
-              <canvas id="feedbackSpirogramChart"></canvas>
-            </div>
+  // 3. I:E ratio shift
+  const ieDrop=e.ie-l.ie;
+  const ieRise=l.ie-e.ie;
+  if(ieDrop>=0.2){
+    findings.push({
+      icon:'☽',
+      text:`吐氣比例逐漸增加：吸吐比從前段 ${e.ie} 改善到後段 ${l.ie}。延長的吐氣正在幫助副交感神經活化。`
+    });
+  } else if(ieRise>=0.2){
+    findings.push({
+      icon:'☀',
+      text:`吸氣比例在後段偏重（吸吐比 ${l.ie}），這可能反映輕度的喚醒或緊張感。下次可以試著有意識地把吐氣拉得比吸氣長一些。`
+    });
+  }
 
-            <!-- 【新增】時間分期水平軌跡軸 (Timeline Tag Axis) -->
-            <div class="space-y-1.5 border-t border-zen-50 pt-3">
-              <span class="text-[9px] font-bold text-zen-500 tracking-wider uppercase block">整段呼吸練習動態切片 (分期標籤)</span>
-              <div class="flex items-stretch bg-zen-50 h-9 rounded-lg overflow-hidden border border-zen-100 text-[10px] font-bold text-center">
-                <div class="flex-1 bg-amber-100/60 border-r border-zen-100 flex flex-col justify-center text-amber-950 p-1">
-                  <span class="block text-[8px] text-amber-700/80 font-normal">1. 暖身適應</span>
-                  <span class="truncate">熱身對齊</span>
-                </div>
-                <div class="flex-[3] bg-emerald-50 border-r border-zen-100 flex flex-col justify-center text-emerald-950 p-1">
-                  <span class="block text-[8px] text-emerald-700/80 font-normal">2. 核心調諧</span>
-                  <span id="timeline-stage-mid" class="truncate">自主諧振</span>
-                </div>
-                <div class="flex-[2] bg-indigo-50 flex flex-col justify-center text-indigo-950 p-1">
-                  <span class="block text-[8px] text-indigo-700/80 font-normal">3. 沉澱統合</span>
-                  <span id="timeline-stage-late" class="truncate">深度入定</span>
-                </div>
-              </div>
-            </div>
+  // 4. Depth variation (inhale variance)
+  const inhales=breaths.map(b=>b.inhaleMs);
+  const inhMean=inhales.reduce((a,b)=>a+b,0)/inhales.length;
+  const inhCV=Math.sqrt(inhales.reduce((s,c)=>s+Math.pow(c-inhMean,2),0)/inhales.length)/inhMean;
+  if(inhCV>0.35){
+    const maxI=Math.max(...inhales)/1000;
+    const minI=Math.min(...inhales)/1000;
+    findings.push({
+      icon:'↕',
+      text:`吸氣深淺變化明顯，最長達 ${maxI.toFixed(1)} 秒、最短只有 ${minI.toFixed(1)} 秒，落差 ${(maxI-minI).toFixed(1)} 秒。這可能是在摸索舒適深度，也可能是專注力偶爾分散。`
+    });
+  }
 
-            <!-- 每一次呼吸比例時序條 -->
-            <div class="space-y-2 pt-2 border-t border-zen-50" id="feedback-breath-bars">
-              <!-- 動態生成每一口氣的吸吐比例條 -->
-            </div>
-          </div>
-
-          <!-- 每個呼吸動態演變 -->
-          <div class="p-3.5 bg-white rounded-xl border border-zen-100 space-y-3">
-            <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
-              <i data-lucide="trending-up" class="w-4 h-4 text-zen-accent"></i>
-              <span>每一次呼吸動態演變</span>
-            </span>
-            <div class="flex flex-wrap gap-2">
-              <span id="badge-trend" class="px-2.5 py-1 rounded-full text-[10px] font-bold">調節：分析中</span>
-              <span id="badge-stability" class="px-2.5 py-1 rounded-full text-[10px] font-bold">穩定度：分析中</span>
-            </div>
-            <p class="text-xs text-zen-600 leading-relaxed bg-zen-50/40 p-2 rounded-lg" id="result-trajectory">
-              動態趨勢計算中...
-            </p>
-          </div>
-
-          <!-- 生理分析綜合解讀 -->
-          <div class="p-3.5 bg-white rounded-xl border border-zen-100 space-y-1.5">
-            <span class="text-xs font-bold text-zen-700 flex items-center space-x-1.5">
-              <i data-lucide="brain-circuit" class="w-4 h-4 text-zen-accent"></i>
-              <span>身心側寫與推論結論</span>
-            </span>
-            <p class="text-xs text-zen-600 leading-relaxed" id="result-interpretation">
-              資料計算中...
-            </p>
-          </div>
-        </div>
-
-        <!-- 主觀感受填寫區 -->
-        <div class="space-y-4 border-t border-zen-100 pt-4">
-          <div class="space-y-2">
-            <label class="text-sm font-bold text-zen-800">你當下的主觀感受是？</label>
-            <div class="grid grid-cols-4 gap-2">
-              <button onclick="selectEmoji('😄', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">😄<span class="block text-[10px] mt-0.5 text-zen-500">放鬆</span></button>
-              <button onclick="selectEmoji('😐', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">😐<span class="block text-[10px] mt-0.5 text-zen-500">平常</span></button>
-              <button onclick="selectEmoji('🤯', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">🤯<span class="block text-[10px] mt-0.5 text-zen-500">緊繃</span></button>
-              <button onclick="selectEmoji('😴', this)" class="emoji-btn py-2 text-xl bg-zen-50 border border-transparent rounded-xl hover:bg-zen-100 transition-all">😴<span class="block text-[10px] mt-0.5 text-zen-500">昏沉</span></button>
-            </div>
-          </div>
-
-          <div class="space-y-2">
-            <label class="text-sm font-bold text-zen-800">隨筆札記 (選填)</label>
-            <textarea id="feedback-notes" rows="2" placeholder="寫下此時此刻身體的輕盈感、或腦海中思緒的澄澈度..." class="w-full border border-zen-200 rounded-xl p-3 text-xs focus:ring-1 focus:ring-zen-500 focus:outline-none custom-scroll"></textarea>
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-6 pt-4 border-t border-zen-100 flex space-x-3 shrink-0">
-        <button onclick="exitToSelect()" class="w-1/3 py-3.5 border border-zen-200 hover:bg-zen-50 rounded-xl text-sm font-semibold active:scale-95 transition-all text-zen-600">不儲存</button>
-        <button onclick="saveSession()" class="w-2/3 py-3.5 bg-zen-600 hover:bg-zen-700 text-white rounded-xl text-sm font-bold active:scale-95 transition-all shadow-md">儲存並完成</button>
-      </div>
-    </section>
-
-    <!-- 7. 歷史趨勢與儀表板 (History Dashboard) -->
-    <section id="screen-history" class="absolute inset-0 top-16 bg-white z-20 flex flex-col justify-between p-6 overflow-y-auto custom-scroll hidden">
-      <div class="space-y-6 flex-1">
-        <div class="flex justify-between items-center">
-          <h3 class="text-xl font-bold text-zen-800">您的呼吸軌跡趨勢</h3>
-          <button onclick="exitToSelect()" class="text-xs text-zen-500 hover:text-zen-700 flex items-center space-x-1">
-            <i data-lucide="home" class="w-4 h-4"></i>
-            <span>回首頁</span>
-          </button>
-        </div>
-
-        <!-- 趨勢圖 -->
-        <div class="bg-zen-50/50 p-4 rounded-2xl border border-zen-100 space-y-2">
-          <span class="text-xs font-bold text-zen-700 block">靜息呼吸速率趨勢 (BPM)</span>
-          <div class="h-48 w-full relative">
-            <canvas id="historyChart"></canvas>
-          </div>
-        </div>
-
-        <!-- 歷史列表 -->
-        <div class="space-y-3">
-          <div class="flex justify-between items-center">
-            <span class="text-sm font-bold text-zen-800">練習紀錄</span>
-            <button onclick="clearHistory()" class="text-[10px] text-red-500 hover:underline">清除歷史</button>
-          </div>
-
-          <div class="space-y-2.5 max-h-[22rem] overflow-y-auto custom-scroll" id="history-list">
-            <div class="text-center py-8 text-xs text-zen-400">尚未累積 any 練習紀錄</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-  </main>
-
-  <script>
-    // --- 狀態宣告 ---
-    let appState = {
-      isLoggedIn: false,
-      currentScreen: 'gate', 
-      breathData: [], 
-      history: [],
-      currentEmoji: '😄',
-      currentSession: null,
-      freeMode: 'quick', 
-      targetCycles: 6,
-      soundEnabled: true 
-    };
-
-    // 暫存一組呼吸週期數據
-    let currentCycle = {
-      startTime: null,
-      inhaleTime: null, 
-      exhaleTime: null, 
-      status: 'idle' 
-    };
-
-    // 引導計時器變數
-    let guidedTimer = null;
-    let guidedSecLeft = 60;
-    let guidedPhase = 'inhale'; 
-    let guidedPhaseSec = 0;
-    let guidedTouchActive = false;
-    let guidedCyclesCount = 0;
-    let guidedMethodSelected = null;
-    let lastPlayedPhase = null; 
-
-    // 呼吸評估公式設定
-    const VD = 150; 
-
-    // --- Web Audio 泛音管風琴合成引擎 ---
-    let audioCtx = null;
-    let synthOsc = null;
-    let synthGain = null;
-
-    function initAudio() {
-      if (audioCtx) return;
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-
-    // 🛡️ 臨床防溢出與崩潰之 safeToFixed 數值安全過濾器
-    function safeToFixed(value, digits = 1) {
-      if (value === undefined || value === null || !isFinite(value) || isNaN(value)) {
-        return "--";
-      }
-      return value.toFixed(digits);
-    }
-
-    // 🛡️ 補上先前遺漏的 showToast 全域通知函式
-    function showToast(text) {
-      const toast = document.getElementById('toast');
-      const toastText = document.getElementById('toast-text');
-      if (toast && toastText) {
-        toastText.innerText = text;
-        toast.classList.remove('opacity-0');
-        toast.classList.add('opacity-100');
-        setTimeout(() => {
-          toast.classList.remove('opacity-100');
-          toast.classList.add('opacity-0');
-        }, 2500);
-      }
-    }
-
-    function playOrganNote(frequency) {
-      if (!appState.soundEnabled) return;
-      
-      initAudio();
-      
-      if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-
-      stopOrganNote();
-
-      const osc = audioCtx.createOscillator();
-      const gainNode = audioCtx.createGain();
-
-      const realHarmonics = new Float32Array([
-        0,    
-        1.0,  // f0 (基音)
-        0.6,  // 2f0 (純八度)
-        0.4,  // 3f0 (五度)
-        0.3,  // 4f0 (雙八度)
-        0.1,  // 5f0
-        0.05  
-      ]);
-      const imagHarmonics = new Float32Array(realHarmonics.length); 
-      const organWave = audioCtx.createPeriodicWave(realHarmonics, imagHarmonics);
-      
-      osc.setPeriodicWave(organWave);
-      osc.frequency.value = frequency;
-
-      const filter = audioCtx.createBiquadFilter();
-      filter.type = 'lowpass';
-      filter.frequency.value = 1000; 
-
-      gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.12, audioCtx.currentTime + 0.3);
-
-      osc.connect(filter);
-      filter.connect(gainNode);
-      gainNode.connect(audioCtx.destination);
-
-      osc.start();
-
-      synthOsc = osc;
-      synthGain = gainNode;
-    }
-
-    function stopOrganNote() {
-      if (synthOsc && synthGain) {
-        const tempGain = synthGain;
-        const tempOsc = synthOsc;
-        const fadeTime = 0.4; 
-
-        tempGain.gain.setValueAtTime(tempGain.gain.value, audioCtx.currentTime);
-        tempGain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + fadeTime);
-
-        setTimeout(() => {
-          try {
-            tempOsc.stop();
-            tempOsc.disconnect();
-            tempGain.disconnect();
-          } catch (e) {}
-        }, fadeTime * 1000);
-
-        synthOsc = null;
-        synthGain = null;
-      }
-    }
-
-    function toggleSound() {
-      appState.soundEnabled = !appState.soundEnabled;
-      const soundIcon = document.getElementById('sound-icon');
-      
-      if (appState.soundEnabled) {
-        soundIcon.setAttribute('data-lucide', 'volume-2');
-        showToast('音效引導已開啟 🔊');
-        if (appState.currentScreen === 'free-assess') {
-          if (currentCycle.status === 'inhaling') playOrganNote(196.00); 
-          else if (currentCycle.status === 'exhaling') playOrganNote(130.81); 
-        }
-      } else {
-        soundIcon.setAttribute('data-lucide', 'volume-x');
-        stopOrganNote();
-        showToast('音效引導已關閉 🔇');
-      }
-      lucide.createIcons();
-    }
-
-    // --- Screen 切換 ---
-    function changeScreen(screenId) {
-      ['screen-gate', 'screen-intro', 'screen-select', 'screen-free-assess', 'screen-guided-select', 'screen-guided-active', 'screen-feedback', 'screen-history'].forEach(id => {
-        document.getElementById(id).classList.add('hidden');
+  // 5. Mid-session dip/peak
+  if(n>=9){
+    const midBPM=m.bpm;
+    if(midBPM<e.bpm-2&&midBPM<l.bpm-2){
+      findings.push({
+        icon:'⌢',
+        text:`中段呼吸最慢（${midBPM} BPM），前後段都較快。有時候是身體在中間短暫進入很深的狀態，然後注意力稍微拉回。`
       });
-
-      if (screenId === 'gate') {
-        document.getElementById('screen-gate').classList.remove('hidden');
-      } else if (screenId === 'intro') {
-        document.getElementById('screen-intro').classList.remove('hidden');
-      } else if (screenId === 'select') {
-        document.getElementById('screen-select').classList.remove('hidden');
-      } else if (screenId === 'free-assess') {
-        document.getElementById('screen-free-assess').classList.remove('hidden');
-      } else if (screenId === 'guided-select') {
-        document.getElementById('screen-guided-select').classList.remove('hidden');
-      } else if (screenId === 'guided-active') {
-        document.getElementById('screen-guided-active').classList.remove('hidden');
-      } else if (screenId === 'feedback') {
-        document.getElementById('screen-feedback').classList.remove('hidden');
-      } else if (screenId === 'history') {
-        document.getElementById('screen-history').classList.remove('hidden');
-        renderHistoryList();
-        renderHistoryChart();
-      }
-      appState.currentScreen = screenId;
-    }
-
-    // --- 1. Gate 處理 ---
-    function acceptGate() {
-      initAudio(); 
-      changeScreen('intro');
-    }
-    function rejectGate() {
-      showToast('未滿 18 歲或拒絕聲明者，無法進入此應用程式。');
-    }
-
-    // --- 2. Intro 處理 ---
-    function nextToIntro() {
-      changeScreen('select');
-    }
-
-    function exitToSelect() {
-      stopOrganNote(); 
-      stopGuidedSession();
-      resetFreeSession();
-      changeScreen('select');
-    }
-
-    // --- 選擇自由檢測長度彈窗控制 ---
-    function openFreeModeModal() {
-      const modal = document.getElementById('free-mode-modal');
-      const drawer = modal.querySelector('div:nth-child(2)');
-      modal.classList.remove('pointer-events-none', 'opacity-0');
-      modal.classList.add('opacity-100');
-      drawer.style.transform = "translateY(0)";
-    }
-
-    function closeFreeModeModal() {
-      const modal = document.getElementById('free-mode-modal');
-      const drawer = modal.querySelector('div:nth-child(2)');
-      drawer.style.transform = "translateY(100%)";
-      setTimeout(() => {
-        modal.classList.add('pointer-events-none', 'opacity-0');
-        modal.classList.remove('opacity-100');
-      }, 300);
-    }
-
-    function selectFreeMode(modeType, cycles) {
-      appState.freeMode = modeType;
-      appState.targetCycles = cycles;
-      closeFreeModeModal();
-      
-      let bannerText = '自由監測（快速覺察）';
-      if (modeType === 'deep') bannerText = '自由監測（深度評估）';
-      if (modeType === 'unlimited') bannerText = '自由監測（不限時自律覺察）';
-
-      document.getElementById('free-mode-banner').innerText = bannerText;
-      document.getElementById('cycle-count-text').innerText = modeType === 'unlimited' ? '已收集: 0 次' : `收集進度: 0 / ${cycles} 次循環`;
-      
-      document.getElementById('btn-manual-stop').classList.add('hidden');
-
-      startFreeAssessment();
-    }
-
-    // --- 3. 自由檢測觸控邏輯 (Free Breath Engine) ---
-    let breathCanvas = document.getElementById('breath-canvas');
-    let breathCtx = breathCanvas.getContext('2d');
-    let scaleVal = 1;
-    let canvasAnimFrame = null;
-
-    function initFreeBreathCanvas() {
-      const dpr = window.devicePixelRatio || 1;
-      breathCanvas.width = breathCanvas.offsetWidth * dpr;
-      breathCanvas.height = breathCanvas.offsetHeight * dpr;
-      breathCtx.scale(dpr, dpr);
-    }
-
-    function drawFreeCanvas() {
-      const w = breathCanvas.width / (window.devicePixelRatio || 1);
-      const h = breathCanvas.height / (window.devicePixelRatio || 1);
-      breathCtx.clearRect(0, 0, w, h);
-
-      const gradient = breathCtx.createRadialGradient(w/2, h/2, 10, w/2, h/2, 120 * scaleVal);
-      if (currentCycle.status === 'inhaling') {
-        gradient.addColorStop(0, 'rgba(110, 117, 93, 0.4)');
-        gradient.addColorStop(1, 'rgba(110, 117, 93, 0.05)');
-      } else {
-        gradient.addColorStop(0, 'rgba(194, 166, 135, 0.25)');
-        gradient.addColorStop(1, 'rgba(194, 166, 135, 0.01)');
-      }
-
-      breathCtx.fillStyle = gradient;
-      breathCtx.beginPath();
-      breathCtx.arc(w/2, h/2, 150 * scaleVal, 0, Math.PI * 2);
-      breathCtx.fill();
-
-      if (currentCycle.status === 'inhaling') {
-        scaleVal += (1.4 - scaleVal) * 0.05;
-      } else {
-        scaleVal += (0.9 - scaleVal) * 0.05;
-      }
-
-      canvasAnimFrame = requestAnimationFrame(drawFreeCanvas);
-    }
-
-    function startFreeAssessment() {
-      changeScreen('free-assess');
-      resetFreeSession();
-      initFreeBreathCanvas();
-      drawFreeCanvas();
-      setupTouchEvents();
-    }
-
-    function resetFreeSession() {
-      if (canvasAnimFrame) {
-        cancelAnimationFrame(canvasAnimFrame);
-        canvasAnimFrame = null;
-      }
-      stopOrganNote(); 
-      appState.breathData = [];
-      currentCycle = { startTime: null, inhaleTime: null, exhaleTime: null, status: 'idle' };
-      scaleVal = 1;
-      updateCycleProgress();
-      document.getElementById('live-rr').innerText = '--';
-      document.getElementById('live-ie').innerText = '--';
-      document.getElementById('breath-chart-bar').innerHTML = '<div class="text-center text-xs text-zen-400 w-full py-4">等待開始呼吸...</div>';
-    }
-
-    // 🛡️ 防止多次重疊載入 Event Listeners 造成數據倍增
-    function setupTouchEvents() {
-      if (window.touchEventsSetup) return;
-      const touchPad = document.getElementById('touch-pad');
-      touchPad.addEventListener('touchstart', (e) => { e.preventDefault(); handleInhaleStart(); }, {passive: false});
-      touchPad.addEventListener('touchend', (e) => { e.preventDefault(); handleExhaleStart(); }, {passive: false});
-      touchPad.addEventListener('mousedown', (e) => { handleInhaleStart(); });
-      touchPad.addEventListener('mouseup', (e) => { handleExhaleStart(); });
-      window.touchEventsSetup = true;
-    }
-
-    function handleInhaleStart() {
-      const core = document.getElementById('touch-core');
-      const prompt = document.getElementById('touch-prompt');
-      const icon = document.getElementById('touch-icon');
-
-      core.style.transform = "scale(1.15)";
-      core.classList.add('bg-zen-200');
-      prompt.innerText = '正在吸氣...';
-      icon.classList.remove('text-zen-400');
-      icon.classList.add('text-zen-600');
-
-      playOrganNote(196.00); 
-
-      const now = Date.now();
-
-      if (currentCycle.status === 'exhaling' && currentCycle.startTime) {
-        const ttot = (now - currentCycle.startTime) / 1000;
-        const ti = currentCycle.inhaleTime ? (currentCycle.inhaleTime - currentCycle.startTime) / 1000 : 2;
-        const te = ttot - ti;
-
-        if (ttot > 2 && ttot < 25) { 
-          const instantRR = 60 / ttot;
-          const ie = ti / (te || 0.1); // 防止分母為 0
-
-          appState.breathData.push({
-            ti_seconds: parseFloat(ti.toFixed(1)),
-            te_seconds: parseFloat(te.toFixed(1)),
-            ttot_seconds: parseFloat(ttot.toFixed(1)),
-            instant_rr: parseFloat(instantRR.toFixed(1)),
-            ie_ratio: parseFloat(ie.toFixed(2))
-          });
-
-          if (appState.breathData.length <= 2) {
-            showToast(`適應期適調中 (第 ${appState.breathData.length} 次暖身)`);
-          }
-
-          document.getElementById('live-rr').innerText = instantRR.toFixed(1);
-          document.getElementById('live-ie').innerText = `1:${safeToFixed(1/ie, 1)}`;
-          updateCycleProgress();
-          renderBreathByBreathBars();
-
-          if (navigator.vibrate) navigator.vibrate(40);
-        }
-      }
-
-      currentCycle.startTime = now;
-      currentCycle.status = 'inhaling';
-    }
-
-    function handleExhaleStart() {
-      const core = document.getElementById('touch-core');
-      const prompt = document.getElementById('touch-prompt');
-      const icon = document.getElementById('touch-icon');
-
-      core.style.transform = "scale(1)";
-      core.classList.remove('bg-zen-200');
-      prompt.innerText = '正在吐氣...';
-      icon.classList.remove('text-zen-600');
-      icon.classList.add('text-zen-400');
-
-      playOrganNote(130.81);
-
-      if (currentCycle.status === 'inhaling') {
-        currentCycle.inhaleTime = Date.now();
-        currentCycle.status = 'exhaling';
-        
-        if (navigator.vibrate) navigator.vibrate(15);
-      }
-    }
-
-    function updateCycleProgress() {
-      const dotsContainer = document.getElementById('cycle-dots');
-      const countText = document.getElementById('cycle-count-text');
-      const stopBtn = document.getElementById('btn-manual-stop');
-      const count = appState.breathData.length;
-      const target = appState.targetCycles;
-
-      dotsContainer.innerHTML = '';
-
-      if (appState.freeMode === 'unlimited') {
-        const displayLimit = 8;
-        const startIndex = Math.max(0, count - displayLimit);
-
-        for (let i = startIndex; i < startIndex + displayLimit; i++) {
-          const dot = document.createElement('div');
-          let dotClass = 'bg-zen-200';
-          if (i < count) {
-            dotClass = i < 2 ? 'bg-amber-400 scale-110' : 'bg-emerald-500 scale-110';
-          }
-          dot.className = `w-2.5 h-2.5 rounded-full transition-all duration-300 ${dotClass}`;
-          dotsContainer.appendChild(dot);
-        }
-
-        countText.innerText = `已收集: ${count} 次呼吸`;
-
-        if (count >= 3) {
-          stopBtn.classList.remove('hidden');
-        } else {
-          stopBtn.classList.add('hidden');
-        }
-
-      } else {
-        stopBtn.classList.add('hidden');
-        for (let i = 0; i < target; i++) {
-          const dot = document.createElement('div');
-          let activeClass = 'bg-emerald-500 scale-110';
-          if (i < 2) {
-            activeClass = 'bg-amber-400 scale-110';
-          }
-          dot.className = `w-2.5 h-2.5 rounded-full transition-all duration-300 ${i < count ? activeClass : 'bg-zen-200'}`;
-          dotsContainer.appendChild(dot);
-        }
-        countText.innerText = `收集進度: ${count} / ${target} 次循環`;
-
-        if (count >= target) {
-          setTimeout(() => {
-            stopOrganNote(); 
-            showToast('生理數據收集完成，正在為您進行科學演繹...');
-            generateReport('free', appState.breathData);
-          }, 800);
-        }
-      }
-    }
-
-    function triggerManualStop() {
-      stopOrganNote(); 
-      showToast('手動覺察結束，正在演算您的呼吸時序軌跡...');
-      generateReport('free', appState.breathData);
-    }
-
-    function renderBreathByBreathBars() {
-      const barContainer = document.getElementById('breath-chart-bar');
-      barContainer.innerHTML = '';
-
-      appState.breathData.forEach((b, idx) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = "flex-1 flex flex-col justify-end items-center h-full space-y-1 relative group";
-
-        const minHeight = 15;
-        const maxHeight = 100;
-        const bpm = Math.min(Math.max(b.instant_rr, 4), 40);
-        const percent = ((bpm - 4) / 36) * 100;
-        const computedHeight = Math.max(minHeight, (percent / 100) * maxHeight);
-
-        const bar = document.createElement('div');
-        const barColor = idx < 2 ? "bg-amber-400/80 hover:bg-amber-500" : "bg-zen-500/80 hover:bg-zen-accent";
-        bar.className = `w-full ${barColor} rounded-t-sm transition-all duration-500 relative`;
-        bar.style.height = `${computedHeight}%`;
-
-        const bpmLabel = document.createElement('span');
-        bpmLabel.className = "text-[9px] font-mono text-zen-700 font-bold";
-        bpmLabel.innerText = `${Math.round(b.instant_rr)}`;
-
-        const countLabel = document.createElement('span');
-        countLabel.className = "text-[8px] text-zen-400";
-        countLabel.innerText = idx < 2 ? `暖身` : `#${idx - 1}`;
-
-        wrapper.appendChild(bpmLabel);
-        wrapper.appendChild(bar);
-        wrapper.appendChild(countLabel);
-        barContainer.appendChild(wrapper);
+    } else if(midBPM>e.bpm+2&&midBPM>l.bpm+2){
+      findings.push({
+        icon:'⌣',
+        text:`中段呼吸出現短暫加速（${midBPM} BPM），前後段都較平穩。可能有一個外部干擾，或是身體在重新調整節奏。`
       });
     }
+  }
 
+  // 6. Summary sentence
+  const overallBpm=phaseStats(breaths).bpm;
+  const overallIE=phaseStats(breaths).ie;
+  const overallStab=phaseStats(breaths).stability;
+  const stateKey=classify(overallBpm,overallIE,overallStab);
+  const stateName=STATES[stateKey].label;
 
-    // --- 4. 指定引導練習邏輯 (Guided Breathing Engine) ---
-    const guidedMethods = {
-      '478': {
-        title: '安神放鬆呼吸法 (4-7-8)',
-        desc: '吸氣 4 秒 -> 憋氣 7 秒 -> 呼氣 8 秒',
-        timeline: [
-          { phase: 'inhale', sec: 4, prompt: '按住螢幕：吸氣...', color: 'border-emerald-400' },
-          { phase: 'hold', sec: 7, prompt: '繼續按住：屏住呼吸 (憋)', color: 'border-amber-400' },
-          { phase: 'exhale', sec: 8, prompt: '放開螢幕：平緩呼氣...', color: 'border-zen-accent' }
-        ]
-      },
-      'box': {
-        title: '戰術箱型呼吸 (Box Breathing)',
-        desc: '吸氣 4 秒 -> 憋氣 4 秒 -> 呼氣 4 秒 -> 憋氣 4 秒',
-        timeline: [
-          { phase: 'inhale', sec: 4, prompt: '按住螢幕：吸氣...', color: 'border-emerald-400' },
-          { phase: 'hold', sec: 4, prompt: '繼續按住：保持憋氣...', color: 'border-amber-400' },
-          { phase: 'exhale', sec: 4, prompt: '放開螢幕：呼氣...', color: 'border-zen-accent' },
-          { phase: 'hold_post', sec: 4, prompt: '保持放開：憋氣...', color: 'border-slate-400' }
-        ]
-      },
-      'coherent': {
-        title: '同頻諧振呼吸 (5-5)',
-        desc: '吸氣 5 秒 -> 呼氣 5 秒',
-        timeline: [
-          { phase: 'inhale', sec: 5, prompt: '按住螢幕：吸氣...', color: 'border-emerald-400' },
-          { phase: 'exhale', sec: 5, prompt: '放開螢幕：呼氣...', color: 'border-zen-accent' }
-        ]
-      }
-    };
+  return{early:e,mid:m,late:l,findings,stateKey,overallBpm,overallIE,overallStab};
+}
 
-    let guidedCanvas = document.getElementById('guided-canvas');
-    let guidedCtx = guidedCanvas.getContext('2d');
-    let guidedScaleVal = 1;
-    let guidedAnimFrame = null;
-    let syncErrorSecs = 0; 
+// ── SESSION STATE ──
+// 呼吸計時邏輯：
+//   吸氣 = pressStart → release（放開）
+//   吐氣 = release → 下一次 pressStart
+// 所以完整一次呼吸在「下一次按下」時才存入 breaths[]
+let pressing=false,pressStart=0,exhaleStart=0;
+let breaths=[],wavePoints=[];
+let sessionActive=false,sessionStart=0;
+let timerInterval=null,currentPhase='idle';
+let pendingInhaleMs=0; // 等待吐氣完成的吸氣時長
+const waveCanvas=document.getElementById('waveform');
+const waveCtx=waveCanvas.getContext('2d');
+let waveRAF=null;
 
-    function initGuidedCanvas() {
-      const dpr = window.devicePixelRatio || 1;
-      guidedCanvas.width = guidedCanvas.offsetWidth * dpr;
-      guidedCanvas.height = guidedCanvas.offsetHeight * dpr;
-      guidedCtx.scale(dpr, dpr);
+function resizeWave(){
+  waveCanvas.width=waveCanvas.offsetWidth*devicePixelRatio;
+  waveCanvas.height=waveCanvas.offsetHeight*devicePixelRatio;
+}
+resizeWave();
+window.addEventListener('resize',resizeWave);
+
+// ── ORB COLOR ENGINE ──
+// 吸氣：綠色系，隨時間從淺綠→深綠（越深越充滿）
+// 吐氣：藍色系，隨時間從深藍→淺藍（越淺越釋放）
+let orbColorRAF = null;
+let orbPhaseStart = 0;
+
+const INHALE_COLORS = [
+  // [inner, outer] at t=0 (淺)
+  ['#a8d5c2', '#4a9b84'],
+  // at max (深，約 8s)
+  ['#2a6b5a', '#0d3d2e'],
+];
+const EXHALE_COLORS = [
+  // [inner, outer] at t=0 (深藍)
+  ['#5b8fa8', '#2d5f8a'],
+  // at max release (淺藍灰)
+  ['#b8d4e6', '#7aafc9'],
+];
+
+function lerpColor(a, b, t) {
+  // a, b = '#rrggbb', t = 0..1
+  const ah = parseInt(a.slice(1), 16);
+  const bh = parseInt(b.slice(1), 16);
+  const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+  const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+  const rr = Math.round(ar + (br - ar) * t);
+  const rg = Math.round(ag + (bg - ag) * t);
+  const rb = Math.round(ab + (bb - ab) * t);
+  return '#' + [rr, rg, rb].map(v => v.toString(16).padStart(2, '0')).join('');
+}
+
+function animateOrbColor(phase) {
+  cancelAnimationFrame(orbColorRAF);
+  orbPhaseStart = Date.now();
+  const maxMs = phase === 'inhale' ? 8000 : 10000; // saturate over 8s inhale / 10s exhale
+  const orb = document.getElementById('orb');
+
+  function frame() {
+    const elapsed = Date.now() - orbPhaseStart;
+    const t = Math.min(elapsed / maxMs, 1);
+    const eased = 1 - Math.pow(1 - t, 2); // ease-out
+
+    let inner, outer, shadow;
+    if (phase === 'inhale') {
+      inner = lerpColor(INHALE_COLORS[0][0], INHALE_COLORS[1][0], eased);
+      outer = lerpColor(INHALE_COLORS[0][1], INHALE_COLORS[1][1], eased);
+      shadow = `0 8px 40px rgba(42,107,90,${0.18 + eased * 0.22}), 0 2px 8px rgba(42,107,90,${0.1 + eased * 0.15})`;
+    } else {
+      inner = lerpColor(EXHALE_COLORS[0][0], EXHALE_COLORS[1][0], eased);
+      outer = lerpColor(EXHALE_COLORS[0][1], EXHALE_COLORS[1][1], eased);
+      shadow = `0 8px 40px rgba(45,95,138,${0.25 - eased * 0.12}), 0 2px 8px rgba(45,95,138,${0.12 - eased * 0.06})`;
     }
 
-    function drawGuidedCanvas() {
-      const w = guidedCanvas.width / (window.devicePixelRatio || 1);
-      const h = guidedCanvas.height / (window.devicePixelRatio || 1);
-      guidedCtx.clearRect(0, 0, w, h);
+    orb.style.background = `radial-gradient(circle at 38% 36%, ${inner}, ${outer})`;
+    orb.style.boxShadow = shadow;
+    if (t < 1) orbColorRAF = requestAnimationFrame(frame);
+  }
+  frame();
+}
 
-      const gradient = guidedCtx.createRadialGradient(w/2, h/2, 10, w/2, h/2, 130 * guidedScaleVal);
-      if (guidedPhase === 'inhale') {
-        gradient.addColorStop(0, 'rgba(110, 117, 93, 0.4)');
-        gradient.addColorStop(1, 'rgba(110, 117, 93, 0.05)');
-      } else if (guidedPhase === 'exhale') {
-        gradient.addColorStop(0, 'rgba(194, 166, 135, 0.3)');
-        gradient.addColorStop(1, 'rgba(194, 166, 135, 0.05)');
-      } else {
-        gradient.addColorStop(0, 'rgba(213, 213, 192, 0.3)');
-        gradient.addColorStop(1, 'rgba(213, 213, 192, 0.05)');
-      }
+function resetOrbColor() {
+  cancelAnimationFrame(orbColorRAF);
+  const orb = document.getElementById('orb');
+  orb.style.background = 'radial-gradient(circle at 38% 36%, #7db8a8, #2a6b5a)';
+  orb.style.boxShadow = '0 8px 40px rgba(42,107,90,.18), 0 2px 8px rgba(42,107,90,.1)';
+}
 
-      guidedCtx.fillStyle = gradient;
-      guidedCtx.beginPath();
-      guidedCtx.arc(w/2, h/2, 160 * guidedScaleVal, 0, Math.PI * 2);
-      guidedCtx.fill();
+function startInhale(){
+  if(!sessionActive){
+    sessionActive=true;sessionStart=Date.now();
+    document.getElementById('stopBtn').classList.add('show');
+    timerInterval=setInterval(updateTimer,1000);
+  }
 
-      let targetScale = 1;
-      if (guidedPhase === 'inhale') {
-        targetScale = 1.4;
-      } else if (guidedPhase === 'exhale') {
-        targetScale = 0.8;
-      } else if (guidedPhase === 'hold') {
-        targetScale = 1.4; 
-      } else if (guidedPhase === 'hold_post') {
-        targetScale = 0.8; 
-      }
-
-      guidedScaleVal += (targetScale - guidedScaleVal) * 0.02; 
-
-      guidedAnimFrame = requestAnimationFrame(drawGuidedCanvas);
+  // 結算上一次吐氣
+  if(pendingInhaleMs>0 && currentPhase==='exhaling'){
+    const exhaleMs=Date.now()-exhaleStart;
+    if(exhaleMs>200){
+      breaths.push({inhaleMs:pendingInhaleMs,exhaleMs,ts:Date.now()});
+      updateLiveStats();
     }
+    pendingInhaleMs=0;
+  }
 
-    function openGuidedSelect() {
-      changeScreen('guided-select');
+  pressing=true;pressStart=Date.now();currentPhase='inhaling';
+  document.getElementById('orb').classList.add('pressed');
+  document.getElementById('orbMain').textContent='吸氣中';
+  document.getElementById('orbSub').textContent='放開吐氣';
+  const chip=document.getElementById('statusChip');
+  chip.textContent='吸氣';chip.className='status-chip inhaling';
+  wavePoints.push({t:Date.now()-sessionStart,phase:1});
+  if(!waveRAF)drawWave();
+  animateOrbColor('inhale');
+  playOrgan(FREQ_G4, 280);
+}
+
+function startExhale(){
+  if(!pressing)return;
+  pressing=false;
+  const inhaleMs=Date.now()-pressStart;
+  if(inhaleMs<300){currentPhase='idle';return;}
+  pendingInhaleMs=inhaleMs;
+  exhaleStart=Date.now();
+  currentPhase='exhaling';
+  document.getElementById('orb').classList.remove('pressed');
+  document.getElementById('orbMain').textContent='吐氣中';
+  document.getElementById('orbSub').textContent='按住吸氣';
+  const chip=document.getElementById('statusChip');
+  chip.textContent='吐氣';chip.className='status-chip exhaling';
+  wavePoints.push({t:Date.now()-sessionStart,phase:0});
+  animateOrbColor('exhale');
+  playOrgan(FREQ_C4, 350);
+}
+
+function recordBreath(){} // 已廢棄，邏輯移入 startInhale
+
+function updateLiveStats(){
+  if(breaths.length===0)return;
+  const recent=breaths.slice(-6);
+  const avgCycle=recent.reduce((s,b)=>s+b.inhaleMs+b.exhaleMs,0)/recent.length;
+  const bpm=Math.round(60000/avgCycle*10)/10;
+  const avgI=recent.reduce((s,b)=>s+b.inhaleMs,0)/recent.length;
+  const avgE=recent.reduce((s,b)=>s+b.exhaleMs,0)/recent.length;
+  const ie=avgI/avgE;
+  const cycles=recent.map(b=>b.inhaleMs+b.exhaleMs);
+  const mean=cycles.reduce((a,b)=>a+b,0)/cycles.length;
+  const cv=Math.sqrt(cycles.reduce((s,c)=>s+Math.pow(c-mean,2),0)/cycles.length)/mean;
+  const stability=Math.max(0,Math.min(100,Math.round((1-cv)*100)));
+
+  document.getElementById('statBPM').textContent=bpm.toFixed(1);
+  document.getElementById('statIE').textContent=(avgI/1000).toFixed(1)+':'+(avgE/1000).toFixed(1);
+  document.getElementById('statCount').textContent=breaths.length;
+
+  if(breaths.length>=3){
+    const key=classify(bpm,ie,stability);
+    const s=STATES[key];
+    const res=document.getElementById('stateResult');
+    document.getElementById('stateTag').textContent=s.label;
+    document.getElementById('stateTag').className='state-tag '+s.cls;
+    document.getElementById('stateName').textContent=s.label;
+    document.getElementById('stateDesc').textContent=s.desc;
+    document.getElementById('methodTags').innerHTML=s.methods.map(m=>`<span class="method-tag">${m}</span>`).join('');
+    res.classList.add('visible');
+  }
+}
+
+function drawWave(){
+  const W=waveCanvas.width,H=waveCanvas.height;
+  waveCtx.clearRect(0,0,W,H);
+  if(wavePoints.length<2){waveRAF=requestAnimationFrame(drawWave);return}
+  const now=Date.now()-sessionStart;
+  const windowMs=20000;
+  const visible=[...wavePoints,{t:now,phase:pressing?1:0}];
+  const startT=Math.max(0,now-windowMs);
+  waveCtx.beginPath();
+  let first=true;
+  for(let i=0;i<visible.length;i++){
+    const p=visible[i];
+    if(p.t<startT)continue;
+    const x=((p.t-startT)/windowMs)*W;
+    const y=p.phase===1?H*.15:H*.85;
+    if(first){waveCtx.moveTo(x,y);first=false}
+    else{const prev=visible[i-1];const px=((prev.t-startT)/windowMs)*W;waveCtx.lineTo(px+1,y);waveCtx.lineTo(x,y)}
+  }
+  const lastP=visible[visible.length-1];
+  waveCtx.lineTo(W,pressing?H*.15:H*.85);
+  waveCtx.strokeStyle=pressing?'#2a6b5a':'#4a9b84';
+  waveCtx.lineWidth=2*devicePixelRatio;waveCtx.lineCap='round';waveCtx.stroke();
+  waveCtx.lineTo(W,H);
+  const firstVis=visible.find(p=>p.t>=startT);
+  waveCtx.lineTo(((firstVis?firstVis.t:startT)-startT)/windowMs*W,H);
+  waveCtx.closePath();
+  waveCtx.fillStyle=pressing?'rgba(42,107,90,.10)':'rgba(74,155,132,.07)';
+  waveCtx.fill();
+  waveCtx.fillStyle='rgba(100,100,100,.3)';
+  for(let t=Math.ceil(startT/5000)*5000;t<=now;t+=5000){
+    const x=((t-startT)/windowMs)*W;
+    waveCtx.fillRect(x,H-4*devicePixelRatio,devicePixelRatio,4*devicePixelRatio);
+  }
+  waveCtx.font=`${9*devicePixelRatio}px 'DM Sans',sans-serif`;
+  waveCtx.fillStyle='rgba(42,107,90,.6)';waveCtx.fillText('吸',4*devicePixelRatio,H*.2);
+  waveCtx.fillStyle='rgba(100,140,120,.5)';waveCtx.fillText('吐',4*devicePixelRatio,H*.9);
+  waveRAF=requestAnimationFrame(drawWave);
+}
+
+function updateTimer(){
+  const el=Math.floor((Date.now()-sessionStart)/1000);
+  document.getElementById('timerDisplay').textContent=
+    Math.floor(el/60)+':'+String(el%60).padStart(2,'0');
+}
+
+function endSession(){
+  if(!sessionActive)return;
+  // 結算最後一次吐氣（如果有）
+  if(pendingInhaleMs>0 && currentPhase==='exhaling'){
+    const exhaleMs=Date.now()-exhaleStart;
+    if(exhaleMs>200) breaths.push({inhaleMs:pendingInhaleMs,exhaleMs,ts:Date.now()});
+    pendingInhaleMs=0;
+  }
+  sessionActive=false;clearInterval(timerInterval);
+  cancelAnimationFrame(waveRAF);waveRAF=null;
+  document.getElementById('orb').classList.remove('pressed');
+  document.getElementById('orbMain').textContent='按住吸氣';
+  document.getElementById('orbSub').textContent='放開吐氣';
+  document.getElementById('statusChip').className='status-chip';
+  document.getElementById('statusChip').textContent='練習完成';
+  stopOrgan(600); // 緩慢淡出
+  document.getElementById('feelingModal').classList.add('open');
+}
+
+function toggleFeeling(el){el.classList.toggle('selected')}
+
+function saveSession(){
+  const feelings=[...document.querySelectorAll('.feeling-opt.selected')].map(el=>el.textContent);
+  const note=document.getElementById('feelingNote').value;
+  if(breaths.length===0){closeModal();resetSession();return}
+
+  const avgCycle=breaths.reduce((s,b)=>s+b.inhaleMs+b.exhaleMs,0)/breaths.length;
+  const bpm=Math.round(60000/avgCycle*10)/10;
+  const avgI=breaths.reduce((s,b)=>s+b.inhaleMs,0)/breaths.length;
+  const avgE=breaths.reduce((s,b)=>s+b.exhaleMs,0)/breaths.length;
+  const ie=avgI/avgE;
+  const cycles=breaths.map(b=>b.inhaleMs+b.exhaleMs);
+  const mean=cycles.reduce((a,b)=>a+b,0)/cycles.length;
+  const cv=Math.sqrt(cycles.reduce((s,c)=>s+Math.pow(c-mean,2),0)/cycles.length)/mean;
+  const stability=Math.max(0,Math.min(100,Math.round((1-cv)*100)));
+  const stateKey=classify(bpm,ie,stability);
+  const durationSec=Math.floor((Date.now()-sessionStart)/1000);
+  const snap=wavePoints.filter((_,i)=>i%3===0).map(p=>({t:p.t,phase:p.phase}));
+  const traj=analyzeTrajectory(breaths);
+
+  const record={
+    id:Date.now(),ts:Date.now(),durationSec,bpm,
+    avgInhale:Math.round(avgI),avgExhale:Math.round(avgE),
+    ie:Math.round(ie*100)/100,stability,breathCount:breaths.length,
+    stateKey,feelings,note,waveSnap:snap,
+    breathDetails:breaths.map(b=>({i:b.inhaleMs,e:b.exhaleMs,ts:b.ts})),
+    trajectory:traj
+  };
+
+  const history=getHistory();
+  history.unshift(record);
+  localStorage.setItem('jte_breath_history',JSON.stringify(history.slice(0,100)));
+  closeModal();resetSession();showPage('history');
+}
+
+function closeModal(){
+  document.getElementById('feelingModal').classList.remove('open');
+  document.querySelectorAll('.feeling-opt').forEach(el=>el.classList.remove('selected'));
+  document.getElementById('feelingNote').value='';
+}
+
+function resetSession(){
+  breaths=[];wavePoints=[];pressing=false;currentPhase='idle';
+  pendingInhaleMs=0;sessionActive=false;
+  document.getElementById('timerDisplay').textContent='0:00';
+  document.getElementById('statBPM').textContent='—';
+  document.getElementById('statIE').textContent='—';
+  document.getElementById('statCount').textContent='0';
+  document.getElementById('stateResult').classList.remove('visible');
+  document.getElementById('stopBtn').classList.remove('show');
+  document.getElementById('statusChip').textContent='準備好了，按住開始';
+  document.getElementById('statusChip').className='status-chip';
+  waveCtx.clearRect(0,0,waveCanvas.width,waveCanvas.height);
+  resetOrbColor();
+}
+
+function getHistory(){
+  try{return JSON.parse(localStorage.getItem('jte_breath_history')||'[]')}
+  catch{return[]}
+}
+
+// ── TRAJECTORY HTML ──
+function trajHTML(traj){
+  if(!traj||!traj.findings)return'';
+  const {early:e,mid:m,late:l,findings}=traj;
+
+  const bpmArrow=l.bpm<e.bpm-1?'↓':l.bpm>e.bpm+1?'↑':'→';
+  const bpmColor=l.bpm<e.bpm-1?'#2a6b5a':l.bpm>e.bpm+1?'#c85d3a':'#555';
+  const arrowLabel=l.bpm<e.bpm-1
+    ?`BPM 下降 ${(e.bpm-l.bpm).toFixed(1)}`
+    :l.bpm>e.bpm+1
+    ?`BPM 上升 ${(l.bpm-e.bpm).toFixed(1)}`
+    :'BPM 大致穩定';
+
+  return`<div class="traj-box">
+    <div class="traj-title">TRAJECTORY ANALYSIS · 呼吸軌跡分析</div>
+    <div class="traj-phases">
+      <div class="traj-phase">
+        <div class="traj-phase-label">前段</div>
+        <div class="traj-phase-bpm">${e.bpm}</div>
+        <div class="traj-phase-ie">${e.avgInhaleS}s : ${e.avgExhaleS}s</div>
+        <div class="traj-phase-ie">穩定 ${e.stability}%</div>
+      </div>
+      <div class="traj-phase">
+        <div class="traj-phase-label">中段</div>
+        <div class="traj-phase-bpm">${m.bpm}</div>
+        <div class="traj-phase-ie">${m.avgInhaleS}s : ${m.avgExhaleS}s</div>
+        <div class="traj-phase-ie">穩定 ${m.stability}%</div>
+      </div>
+      <div class="traj-phase">
+        <div class="traj-phase-label">後段</div>
+        <div class="traj-phase-bpm" style="color:${bpmColor}">${l.bpm}</div>
+        <div class="traj-phase-ie">${l.avgInhaleS}s : ${l.avgExhaleS}s</div>
+        <div class="traj-phase-ie">穩定 ${l.stability}%</div>
+      </div>
+    </div>
+    <div class="traj-arrow">
+      <div class="traj-arrow-line"></div>
+      <div class="traj-arrow-dir" style="color:${bpmColor}">${bpmArrow}</div>
+      <div class="traj-arrow-label">${arrowLabel}</div>
+      <div class="traj-arrow-line"></div>
+    </div>
+    <div class="traj-findings">
+      ${findings.map(f=>`<div class="traj-finding">
+        <div class="traj-icon">${f.icon}</div>
+        <div class="traj-text">${f.text}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── HISTORY RENDER ──
+function renderHistory(){
+  const history=getHistory();
+  document.getElementById('histSub').textContent=
+    history.length>0?`共 ${history.length} 次練習紀錄`:'還沒有練習紀錄';
+  const list=document.getElementById('sessionList');
+  const cmp=document.getElementById('compareSection');
+
+  if(history.length===0){
+    list.innerHTML=`<div class="empty-state"><div class="empty-icon">◯</div><div>去覺察頁面開始你的第一次練習</div></div>`;
+    cmp.style.display='none';return;
+  }
+
+  cmp.style.display='block';
+  drawCompareChart(history.slice(0,10).reverse());
+
+  list.innerHTML=history.map(r=>{
+    const s=STATES[r.stateKey]||STATES.neutral;
+    const date=new Date(r.ts);
+    const dateStr=date.toLocaleDateString('zh-TW',{month:'short',day:'numeric'})+' '+
+      date.toLocaleTimeString('zh-TW',{hour:'2-digit',minute:'2-digit'});
+    const dur=r.durationSec>=60?Math.floor(r.durationSec/60)+'分'+(r.durationSec%60?r.durationSec%60+'秒':''):r.durationSec+'秒';
+    const feelingStr=r.feelings&&r.feelings.length>0?r.feelings.join('・'):'';
+
+    return`<div class="session-card">
+      <div class="sc-top">
+        <div><div class="sc-date">${dateStr}・${dur}</div><div class="sc-state">${s.label}</div></div>
+        <span class="state-tag ${s.cls}" style="font-size:11px;padding:2px 9px">${s.label}</span>
+      </div>
+      <div class="sc-metrics">
+        <div class="sc-metric">BPM <span>${r.bpm}</span></div>
+        <div class="sc-metric">吸：吐 <span>${(r.avgInhale/1000).toFixed(1)}:${(r.avgExhale/1000).toFixed(1)}s</span></div>
+        <div class="sc-metric">次數 <span>${r.breathCount}</span></div>
+        <div class="sc-metric">穩定度 <span>${r.stability}%</span></div>
+      </div>
+      ${r.waveSnap?`<canvas class="mini-wave" id="mw-${r.id}"></canvas>`:''}
+      ${feelingStr?`<div class="sc-feeling">${feelingStr}</div>`:''}
+      ${r.note?`<div class="sc-feeling" style="margin-top:3px">「${r.note}」</div>`:''}
+      ${trajHTML(r.trajectory)}
+    </div>`;
+  }).join('');
+
+  history.slice(0,20).forEach(r=>{
+    if(!r.waveSnap||r.waveSnap.length<2)return;
+    const el=document.getElementById('mw-'+r.id);
+    if(!el)return;
+    drawMiniWave(el,r.waveSnap);
+  });
+}
+
+function drawMiniWave(canvas,snap){
+  canvas.width=canvas.offsetWidth*devicePixelRatio;
+  canvas.height=canvas.offsetHeight*devicePixelRatio;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  if(snap.length<2)return;
+  const startT=snap[0].t,endT=snap[snap.length-1].t,range=Math.max(endT-startT,1);
+  ctx.beginPath();
+  let first=true;
+  for(let i=0;i<snap.length;i++){
+    const p=snap[i];
+    const x=((p.t-startT)/range)*W;
+    const y=p.phase===1?H*.15:H*.85;
+    if(first){ctx.moveTo(x,y);first=false}
+    else{const prev=snap[i-1];ctx.lineTo(((prev.t-startT)/range)*W+1,y);ctx.lineTo(x,y)}
+  }
+  ctx.lineTo(W,snap[snap.length-1].phase===1?H*.15:H*.85);
+  ctx.strokeStyle='#2a6b5a';ctx.lineWidth=1.5*devicePixelRatio;ctx.stroke();
+}
+
+function drawCompareChart(sessions){
+  const canvas=document.getElementById('compareChart');
+  canvas.width=canvas.offsetWidth*devicePixelRatio;
+  canvas.height=canvas.offsetHeight*devicePixelRatio;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  const pad={t:16,r:12,b:24,l:36};
+  const gW=W-pad.l-pad.r,gH=H-pad.t-pad.b;
+  if(sessions.length<2)return;
+  const bpms=sessions.map(s=>s.bpm);
+  const minB=Math.min(...bpms)-2,maxB=Math.max(...bpms)+2;
+  ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=devicePixelRatio;
+  for(let i=0;i<=4;i++){
+    const y=pad.t+(gH/4)*i;
+    ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+gW,y);ctx.stroke();
+    ctx.fillStyle='rgba(100,100,100,.5)';
+    ctx.font=`${9*devicePixelRatio}px 'DM Sans'`;
+    ctx.fillText((maxB-((maxB-minB)/4)*i).toFixed(0),0,y+3*devicePixelRatio);
+  }
+  ctx.beginPath();
+  sessions.forEach((s,i)=>{
+    const x=pad.l+(i/(sessions.length-1))*gW;
+    const y=pad.t+((maxB-s.bpm)/(maxB-minB))*gH;
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle='#2a6b5a';ctx.lineWidth=2*devicePixelRatio;ctx.lineJoin='round';ctx.stroke();
+  sessions.forEach((s,i)=>{
+    const x=pad.l+(i/(sessions.length-1))*gW;
+    const y=pad.t+((maxB-s.bpm)/(maxB-minB))*gH;
+    ctx.beginPath();ctx.arc(x,y,3*devicePixelRatio,0,Math.PI*2);
+    ctx.fillStyle='#2a6b5a';ctx.fill();
+    const d=new Date(s.ts);
+    ctx.fillStyle='rgba(100,100,100,.6)';
+    ctx.font=`${8*devicePixelRatio}px 'DM Sans'`;
+    ctx.textAlign='center';
+    ctx.fillText((d.getMonth()+1)+'/'+(d.getDate()),x,H-4*devicePixelRatio);
+  });
+}
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
+  const tabs=document.querySelectorAll('.nav-tab');
+  if(name==='sense')tabs[0].classList.add('active');
+  else if(name==='history'){tabs[1].classList.add('active');renderHistory()}
+}
+
+window.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ── ORGAN AUDIO ENGINE ──
+// G4 = 392 Hz (吸氣), C4 = 261.63 Hz (吐氣)
+// 管風琴音色：基音 + 泛音列（2, 3, 4, 5, 6, 8 次諧波）加不同比例
+let audioCtx = null;
+let currentOrgan = null; // { oscillators, gainNode }
+
+const ORGAN_PARTIALS = [
+  // [harmonicMultiplier, relativeGain]
+  [1,    0.50],  // 基音 (8')
+  [2,    0.28],  // 第2泛音 (4')
+  [3,    0.14],  // 第3泛音 (2⅔')
+  [4,    0.10],  // 第4泛音 (2')
+  [5,    0.05],  // 第5泛音 (1⅗')
+  [6,    0.04],  // 第6泛音
+  [8,    0.03],  // 第8泛音 (1')
+];
+
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  // Resume if suspended (mobile autoplay policy)
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+
+function playOrgan(freq, fadeinMs = 300) {
+  stopOrgan(80); // fade out previous
+
+  const ctx = getAudioCtx();
+  const now = ctx.currentTime;
+
+  // master gain for this note
+  const masterGain = ctx.createGain();
+  masterGain.gain.setValueAtTime(0, now);
+  masterGain.gain.linearRampToValueAtTime(0.18, now + fadeinMs / 1000);
+
+  // slight tremolo (3.5 Hz, depth 3%)
+  const tremoloOsc = ctx.createOscillator();
+  tremoloOsc.frequency.value = 3.5;
+  const tremoloGain = ctx.createGain();
+  tremoloGain.gain.value = 0.03;
+  tremoloOsc.connect(tremoloGain);
+
+  // reverb via convolver (simple impulse)
+  const convolver = ctx.createConvolver();
+  convolver.buffer = makeImpulse(ctx, 1.8, 2.5);
+  const reverbGain = ctx.createGain();
+  reverbGain.gain.value = 0.35;
+
+  const oscs = ORGAN_PARTIALS.map(([mult, gain]) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * mult;
+
+    // tiny detune per partial for warmth
+    osc.detune.value = (Math.random() - 0.5) * 3;
+
+    const partialGain = ctx.createGain();
+    partialGain.gain.value = gain;
+
+    // tremolo modulates this partial
+    tremoloGain.connect(partialGain.gain);
+
+    osc.connect(partialGain);
+    partialGain.connect(masterGain);
+    partialGain.connect(convolver); // also send to reverb
+
+    osc.start(now);
+    return osc;
+  });
+
+  tremoloOsc.start(now);
+  convolver.connect(reverbGain);
+  reverbGain.connect(ctx.destination);
+  masterGain.connect(ctx.destination);
+
+  currentOrgan = { oscs, tremoloOsc, masterGain, ctx };
+}
+
+function stopOrgan(fadeMs = 400) {
+  if (!currentOrgan) return;
+  const { oscs, tremoloOsc, masterGain, ctx } = currentOrgan;
+  const now = ctx.currentTime;
+  masterGain.gain.cancelScheduledValues(now);
+  masterGain.gain.setValueAtTime(masterGain.gain.value, now);
+  masterGain.gain.linearRampToValueAtTime(0, now + fadeMs / 1000);
+  const stopTime = now + fadeMs / 1000 + 0.05;
+  oscs.forEach(o => { try { o.stop(stopTime); } catch(_){} });
+  try { tremoloOsc.stop(stopTime); } catch(_){}
+  currentOrgan = null;
+}
+
+// Generate a simple reverb impulse response
+function makeImpulse(ctx, duration, decay) {
+  const sr = ctx.sampleRate;
+  const len = Math.floor(sr * duration);
+  const buf = ctx.createBuffer(2, len, sr);
+  for (let ch = 0; ch < 2; ch++) {
+    const d = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
     }
-
-    function selectGuidedMethod(methodId) {
-      guidedMethodSelected = methodId;
-      changeScreen('guided-active');
-      initGuidedCanvas();
-      drawGuidedCanvas();
-      startGuidedSession(methodId);
-    }
-
-    function startGuidedSession(methodId) {
-      const config = guidedMethods[methodId];
-      document.getElementById('guided-method-title').innerText = config.title;
-      document.getElementById('guided-method-desc').innerText = config.desc;
-
-      guidedSecLeft = 60; 
-      guidedCyclesCount = 0;
-      appState.breathData = [];
-      syncErrorSecs = 0;
-      lastPlayedPhase = null; 
-
-      setupGuidedTouch();
-
-      let currentTimelineIdx = 0;
-      let currentStep = config.timeline[currentTimelineIdx];
-      guidedPhase = currentStep.phase;
-      guidedPhaseSec = currentStep.sec;
-
-      updateGuidedUI(currentStep);
-
-      guidedTimer = setInterval(() => {
-        guidedSecLeft--;
-        guidedPhaseSec--;
-
-        checkUserSync(currentStep.phase);
-
-        if (guidedPhaseSec <= 0) {
-          currentTimelineIdx = (currentTimelineIdx + 1) % config.timeline.length;
-          currentStep = config.timeline[currentTimelineIdx];
-          guidedPhase = currentStep.phase;
-          guidedPhaseSec = currentStep.sec;
-
-          if (navigator.vibrate) navigator.vibrate(80);
-
-          if (currentTimelineIdx === 0) {
-            guidedCyclesCount++;
-          }
-        }
-
-        updateGuidedUI(currentStep);
-
-        if (guidedSecLeft <= 0) {
-          stopGuidedSession();
-          generateReport('guided', null, methodId);
-        }
-      }, 1000);
-    }
-
-    function updateGuidedUI(step) {
-      const stateText = document.getElementById('guide-state-text');
-      const timerText = document.getElementById('guide-timer-text');
-      const cycleText = document.getElementById('guided-cycles');
-      const outerRing = document.getElementById('guide-ring-outer');
-
-      stateText.innerText = step.prompt;
-      timerText.innerText = `${guidedPhaseSec}s`;
-      cycleText.innerText = `剩餘時間: ${guidedSecLeft} 秒 | 已完成: ${guidedCyclesCount} 次`;
-
-      if (guidedPhase !== lastPlayedPhase) {
-        lastPlayedPhase = guidedPhase;
-        if (guidedPhase === 'inhale') {
-          playOrganNote(196.00); 
-        } else if (guidedPhase === 'exhale') {
-          playOrganNote(130.81); 
-        } else {
-          stopOrganNote();
-        }
-      }
-
-      outerRing.className = `absolute w-56 h-56 rounded-full border-4 border-dashed transition-all duration-500 ${step.color}`;
-
-      outerRing.style.transform = step.phase === 'inhale' ? 'scale(1.2)' : (step.phase === 'exhale' ? 'scale(0.8)' : 'scale(1.0)');
-    }
-
-    // 🛡️ 防止多次重疊載入 Event Listeners 造成 guidedTouch 數據混亂
-    function setupGuidedTouch() {
-      if (window.guidedTouchSetup) return;
-      const pad = document.getElementById('guided-touch-pad');
-      pad.addEventListener('touchstart', (e) => { e.preventDefault(); handleGuidedPress(true); }, {passive: false});
-      pad.addEventListener('touchend', (e) => { e.preventDefault(); handleGuidedPress(false); }, {passive: false});
-      pad.addEventListener('mousedown', (e) => { handleGuidedPress(true); });
-      pad.addEventListener('mouseup', (e) => { handleGuidedPress(false); });
-      window.guidedTouchSetup = true;
-    }
-
-    function handleGuidedPress(isPressed) {
-      guidedTouchActive = isPressed;
-      
-      initAudio();
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-
-      const pad = document.getElementById('guided-touch-pad');
-      if (isPressed) {
-        pad.classList.remove('bg-zen-50');
-        pad.classList.add('bg-zen-200');
-      } else {
-        pad.classList.remove('bg-zen-200');
-        pad.classList.add('bg-zen-50');
-      }
-    }
-
-    function checkUserSync(targetPhase) {
-      const feedback = document.getElementById('sync-feedback');
-      let isSynced = false;
-
-      if (targetPhase === 'inhale' || targetPhase === 'hold') {
-        isSynced = guidedTouchActive === true;
-      } else {
-        isSynced = guidedTouchActive === false;
-      }
-
-      if (isSynced) {
-        feedback.innerText = '完美同步 ✨';
-        feedback.className = 'absolute -top-6 text-xs bg-emerald-600 text-white px-3 py-1 rounded-full shadow-md font-semibold opacity-100 transition-opacity';
-      } else {
-        syncErrorSecs++;
-        feedback.innerText = '配合視覺按壓或放開 ⚠️';
-        feedback.className = 'absolute -top-6 text-xs bg-amber-500 text-white px-3 py-1 rounded-full shadow-md font-semibold opacity-100 transition-opacity';
-      }
-    }
-
-    function stopGuidedSession() {
-      stopOrganNote(); 
-      lastPlayedPhase = null;
-      if (guidedTimer) clearInterval(guidedTimer);
-      if (guidedAnimFrame) {
-        cancelAnimationFrame(guidedAnimFrame);
-        guidedAnimFrame = null;
-      }
-      document.getElementById('sync-feedback').classList.add('opacity-0');
-    }
-
-    // --- 生理學通用輔助統計函數 ---
-    function calcMean(arr) {
-      if (!arr.length) return 0;
-      return arr.reduce((a, b) => a + b, 0) / arr.length;
-    }
-    function calcStdDev(arr, mean) {
-      if (!arr.length) return 0;
-      const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
-      return Math.sqrt(variance);
-    }
-    function calcSlope(arr) {
-      const n = arr.length;
-      if (n < 2) return 0;
-      let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
-      for (let i = 0; i < n; i++) {
-        const x = i + 1;
-        const y = arr[i];
-        sumX += x;
-        sumY += y;
-        sumXY += x * y;
-        sumXX += x * x;
-      }
-      return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    }
-
-    // --- 5. 生理病理數據評估與多維身心表型引擎 ---
-    function generateReport(mode, rawData, methodId = null) {
-      changeScreen('feedback');
-      stopOrganNote(); 
-
-      // 🛡️ 報告渲染前，主動取消並解鎖任何後台 Canvas 動畫，釋放 GPU 效能並防止記憶體重疊
-      if (canvasAnimFrame) {
-        cancelAnimationFrame(canvasAnimFrame);
-        canvasAnimFrame = null;
-      }
-      if (guidedAnimFrame) {
-        cancelAnimationFrame(guidedAnimFrame);
-        guidedAnimFrame = null;
-      }
-
-      let finalRR = 0;
-      let finalIE = 1.5;
-      let finalVA = 0;
-      let vdRatio = 0;
-      let interpretation = "";
-      
-      let trajectoryInterpretation = "";
-      let trendBadgeText = "";
-      let trendBadgeClass = "";
-      let stabilityBadgeText = "";
-      let stabilityBadgeClass = "";
-
-      let stableDataForViz = [];
-
-      // 初始化勳章預設狀態
-      let medalEmoji = "🧘";
-      let medalTitle = "正常穩健流";
-      let medalDesc = "您的呼吸時序分布常規且穩定，大腦及自律神經系統正進行正常的和諧代償調整。";
-      let medalBgClass = "from-zen-700 to-zen-800 border-zen-600 text-white";
-
-      // 預設時序軸分期標籤
-      let midStageText = "自主諧振";
-      let lateStageText = "身心漸安";
-
-      if (mode === 'free') {
-        const stableData = rawData.slice(2);
-        stableDataForViz = stableData; 
-        const stableCount = stableData.length;
-
-        if (stableCount > 0) {
-          const avgRR = stableData.reduce((acc, curr) => acc + curr.instant_rr, 0) / stableCount;
-          const avgIE = stableData.reduce((acc, curr) => acc + curr.ie_ratio, 0) / stableCount;
-          
-          finalRR = parseFloat(avgRR.toFixed(1));
-          finalIE = parseFloat(avgIE.toFixed(2));
-
-          const avgTi = stableData.reduce((acc, curr) => acc + curr.ti_seconds, 0) / stableCount;
-          const estVT = Math.min(Math.max(150 + (avgTi * 150), 300), 800); 
-
-          const estVA = (finalRR * (estVT - VD)) / 1000; 
-          finalVA = parseFloat(estVA.toFixed(1));
-          vdRatio = Math.round((VD / estVT) * 100);
-
-          // 核心代償解讀
-          if (finalRR > 20) {
-            interpretation = `<strong>【淺快呼吸：換氣效率低下】</strong><br>您過濾暖身後的平均速率高達 ${finalRR} 次/分，死腔通氣損耗比重為 ${vdRatio}%。雖然每分鐘通氣量（$VE$）看似足夠，但由於呼吸過淺，大部分氣體僅在解剖死腔中庫存，真正進行氣體交換的有效肺泡換氣量（$VA$）僅 ${finalVA} L/min。此型態會顯著增加呼吸肌負荷與高碳酸血症風險。`;
-          } else if (finalIE < 0.5) { 
-            interpretation = `<strong>【呼氣自發延長：神經安定代償】</strong><br>您的平均吸吐比已達到 1:${safeToFixed(1/finalIE, 1)}，顯示您自發性地大幅拉長了呼氣時間。在生理反射中，延長呼氣是啟動副交感神經、調控血管舒張、重置呼吸中樞對二氧化碳耐受度的良性行為，有助於降低周邊血管張力。`;
-          } else if (finalRR >= 8 && finalRR <= 12) {
-            interpretation = `<strong>【慢深呼吸：卓越通氣效能】</strong><br>您的呼吸速率為完美的 ${finalRR} 次/分，死腔耗損被壓低至 ${vdRatio}%。這種慢而深的運作方式能在不增加心肺機械負荷的情況下，獲得極致高效的肺泡通氣效率，是自律神經系統極具諧振活性的健康表徵。`;
-          } else {
-            interpretation = `<strong>【常態節律：身心穩定】</strong><br>您目前的呼吸速率處於穩定的常態代償水平（BPM: ${finalRR}，死腔比: ${vdRatio}%）。建議每天進行 3-5 分鐘的<strong>「同頻諧振練習」</strong>以進一步優化心肺耦合彈性。`;
-          }
-        }
-
-        // 時序多維身心表型演算 (Chrono-phenotype Diagnostic Brain)
-        if (stableCount >= 2) {
-          const rrs = stableData.map(d => d.instant_rr);
-          const tis = stableData.map(d => d.ti_seconds);
-          const tes = stableData.map(d => d.te_seconds);
-          const ttots = stableData.map(d => d.ttot_seconds);
-
-          const meanRR = calcMean(rrs);
-          const stdDevRR = calcStdDev(rrs, meanRR);
-          const cvRR = meanRR > 0 ? (stdDevRR / meanRR) * 100 : 0; // 呼吸速率變異係數 %
-
-          const meanTi = calcMean(tis);
-          const stdDevTi = calcStdDev(tis, meanTi);
-
-          const meanTe = calcMean(tes);
-          const stdDevTe = calcStdDev(tes, meanTe);
-
-          const slopeRR = calcSlope(rrs); // 呼吸速率隨時間之線性斜率
-
-          // 識別深呼吸 / 深長嘆息 (Sigh / Spontaneous Sigh)
-          const sighCount = tes.filter(te => te > meanTe + 1.5 * (stdDevTe || 0.5)).length;
-
-          // 半段切片比對
-          const mid = Math.floor(stableCount / 2);
-          const firstHalf = rrs.slice(0, mid);
-          const secondHalf = rrs.slice(mid);
-
-          const firstHalfTi = tis.slice(0, mid);
-          const secondHalfTi = tis.slice(mid);
-          const avgFirstTi = calcMean(firstHalfTi);
-          const avgSecondTi = calcMean(secondHalfTi);
-
-          const modeLabel = appState.freeMode === 'quick' ? '快速模式' : (appState.freeMode === 'deep' ? '深度模式' : '不限時自主模式');
-
-          // (A) 五大 Contemplative 身心表型判定（導入安全防範 toFixed 補丁）
-          if (cvRR <= 2.5 && cvRR > 0) {
-            // 1. 意念超控制 (Cortical Hyper-Rigidity)
-            medalEmoji = "⚙️";
-            medalTitle = "意念超控制態";
-            medalDesc = `您的呼吸速率變異度極低 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，吸吐時間幾乎如機器般刻板不變。這代表您大腦皮質（控制中樞）深度介入，身體正處於強烈的自我要求或防禦狀態，缺乏了自然的生理隨機變異。放下對完美的執念，容許氣流自然搖擺。`;
-            medalBgClass = "from-amber-900 to-zen-900 border-amber-600 text-amber-50";
-            
-            midStageText = "意志控制";
-            lateStageText = "過度緊繃";
-
-          } else if (sighCount > 0) {
-            // 2. 自發深釋放 (Spontaneous Autonomic Release)
-            medalEmoji = "🌟";
-            medalTitle = "自發深釋放流";
-            medalDesc = `偵測到您在檢測中出現了 ${sighCount} 次自發性深長嘆息（極致呼氣達 ${safeToFixed(Math.max(...tes), 1)} 秒）。此表型在自律神經學中是極其珍貴的「系統重置鍵 (Autonomic Reset)」，代表您體內積累的潛在張力在此刻被大腦主動釋放，有效重新招募與擴張肺泡。`;
-            medalBgClass = "from-emerald-950 to-zen-900 border-emerald-500 text-emerald-50";
-
-            midStageText = "張力累積";
-            lateStageText = "長嘆釋放";
-
-          } else if (slopeRR > 0.15 && avgFirstTi > 0 && avgSecondTi < avgFirstTi * 0.75) {
-            // 3. 呼吸肌疲勞態 (Respiratory Fatigue Compensation)
-            medalEmoji = "🍂";
-            medalTitle = "呼吸肌代償疲勞";
-            medalDesc = `您的呼吸後半段吸氣長度急劇縮短，且頻率呈顯著加速斜率 ($m_{RR} = +${safeToFixed(slopeRR, 2)}$)。生理學上，這反映出您尚未適應深長呼吸，導致膈肌等呼吸主肌群負荷過重，神經中樞被迫以「變淺、加快」的形式進行代償性通氣。`;
-            medalBgClass = "from-rose-950 to-zen-900 border-rose-600 text-rose-50";
-
-            midStageText = "過度努力";
-            lateStageText = "代償疲勞";
-
-          } else if (cvRR >= 20.0) {
-            // 4. 雜念漂移態 (Intrusive Thought Drift)
-            medalEmoji = "💭";
-            medalTitle = "雜念漂移表型";
-            medalDesc = `您的呼吸頻率出現劇烈、無規律的波動 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，並夾雜間歇性急促突波。在正念科學中，這象徵「雜念干擾（Thought Intrusion）」，當思緒飄向焦慮、未完任務時，大腦交感神經會瞬間微弱放電打亂呼吸中樞。這非常正常，練習有意識地收回念頭即可。`;
-            medalBgClass = "from-slate-800 to-zen-900 border-slate-500 text-slate-100";
-
-            midStageText = "思緒游離";
-            lateStageText = "不穩漂移";
-
-          } else if (slopeRR < -0.1 && cvRR < 12.0) {
-            // 5. 禪定諧振流 (Mindful Resonant Flow)
-            medalEmoji = "🏆";
-            medalTitle = "禪定諧振流";
-            medalDesc = `完美的自律與諧振狀態！您的呼吸頻率隨時間流逝穩定且溫和地慢下來 ($m_{RR} = ${safeToFixed(slopeRR, 2)}$)，且波動保持健康的微小變異 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)。這代表您大腦全然放鬆、心肺耦合度極佳，大教堂管風琴的音效已順利引領您進入心流（Flow State）。`;
-            medalBgClass = "from-zen-600 to-zen-900 border-zen-400 text-zen-50";
-
-            midStageText = "諧振調適";
-            lateStageText = "深度入定";
-          } else {
-            // 常態穩健
-            medalEmoji = "🧘";
-            medalTitle = "常態穩健流";
-            medalDesc = `您的呼吸節律變異度健康 ($CV_{RR}$ = ${safeToFixed(cvRR, 1)}%)，後半段頻率未出現異常偏離。這顯示您的神經調控中樞發射均勻，生理系統正進行常規、自適應的平衡代償。`;
-            medalBgClass = "from-zen-700 to-zen-800 border-zen-600 text-white";
-
-            midStageText = "常規調和";
-            lateStageText = "身心漸安";
-          }
-
-          // (B) 調節與穩定度傳統勳章判定
-          if (slopeRR < -0.1) {
-            trendBadgeText = "漸進放鬆 📉";
-            trendBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您前半段平均頻率為 ${safeToFixed(calcMean(firstHalf), 0)} BPM，後半段逐漸放緩至 ${safeToFixed(calcMean(secondHalf), 0)} BPM。這顯示隨著檢測深入，您的大腦正主動降低呼吸中樞驅動，副交感神經開始建立優勢。`;
-          } else if (slopeRR > 0.1) {
-            trendBadgeText = "漸進緊繃 📈";
-            trendBadgeClass = "bg-rose-100 text-rose-800 border border-rose-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，您後半段平均頻率為 ${safeToFixed(calcMean(secondHalf), 0)} BPM，高於前半段的 ${safeToFixed(calcMean(firstHalf), 0)} BPM。這通常是由於操作螢幕時指尖施力緊繃、憋氣適應不良，或思緒浮躁使交感神經被再度激發所致。`;
-          } else {
-            trendBadgeText = "均勻維持 ⚖️";
-            trendBadgeClass = "bg-blue-100 text-blue-800 border border-blue-200";
-            trajectoryInterpretation += `在 <strong>${modeLabel}</strong> 的觀測中，全程呼吸頻率起伏極微（變動斜率 $m_{RR}$ 近乎水平），顯示您的呼吸神經反饋極為平穩，中樞呼吸發生器釋放的訊號非常均勻。`;
-          }
-
-          if (cvRR > 15.0) {
-            stabilityBadgeText = "波動劇烈 ⚠️";
-            stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
-            trajectoryInterpretation += `<br><br>在波動性上，您的速率展現出<strong>「不規律與深淺不一」</strong>的特徵（呼吸變異係數 $CV_{RR}$ 偏高）。這在臨床生理學中，常表示大腦此時正受到多重念頭、雜念干擾。建議嘗試<strong>「箱型呼吸法」</strong>，藉由強制憋氣將專注力拉回。`;
-          } else {
-            stabilityBadgeText = "規律一致 ✨";
-            stabilityBadgeClass = "bg-teal-100 text-teal-800 border border-teal-200";
-            trajectoryInterpretation += `<br><br>在波動性上，您的節律展現出<strong>「高度規律與對稱」</strong>。每一次呼吸循環的時序長度與觸壓深度變異極小。這反映出您的心肺耦合度極高，大腦皮質主動干擾極低。`;
-          }
-
-          // 不限時特徵深度挖掘
-          if (appState.freeMode === 'unlimited' && stableCount >= 4) {
-            const maxTtot = Math.max(...ttots);
-            const maxIdx = ttots.indexOf(maxTtot) + 1;
-            const minRRVal = Math.min(...rrs);
-            const totalDurationSecs = Math.round(ttots.reduce((a, b) => a + b, 0));
-
-            trajectoryInterpretation += `<br><br>💡 <strong>自主長程練習特徵：</strong>`;
-            trajectoryInterpretation += `<br>• 您完成了約 <strong>${totalDurationSecs}</strong> 秒的自律覺察，最深長的一口氣發生在有效呼吸第 <strong>${maxIdx}</strong> 次（總計持續了 <strong>${safeToFixed(maxTtot, 1)}</strong> 秒），代表您在該瞬間達成了極佳的潮氣量與肺通氣擴張。`;
-            trajectoryInterpretation += `<br>• 生理放鬆度最高的極致瞬間，呼吸頻率曾低至 <strong>${safeToFixed(minRRVal, 1)}</strong> BPM。這是一個強大的副交感神經重置信號。`;
-          }
-        } else {
-          trendBadgeText = "常態 🧘";
-          trendBadgeClass = "bg-zen-200 text-zen-700";
-          stabilityBadgeText = "暖身完成";
-          stabilityBadgeClass = "bg-zen-200 text-zen-700";
-          trajectoryInterpretation = "由於過濾暖身後，有效呼吸數據僅有 1 次，尚無法比對前後半段的演變軌跡。建議下次練習可適度拉長呼吸次數，解鎖更為豐富的自律調節報告！";
-        }
-
-      } else {
-        const config = guidedMethods[methodId];
-        const totalPracticeSecs = 60;
-        const syncPercent = Math.max(0, Math.round(((totalPracticeSecs - syncErrorSecs) / totalPracticeSecs) * 100));
-
-        if (methodId === '478') {
-          finalRR = 3.1;
-          finalIE = 0.5;
-          finalVA = 4.8;
-          vdRatio = 21;
-          interpretation = `<strong>【安神放鬆：完成引導】</strong><br>感謝您完成 4-7-8 秒放鬆法！本法藉由刻意憋氣 (7秒) 提高體內 $PaCO_2$ 與氫離子刺激，並透過極致的 8 秒長呼氣，能大幅刺激心臟的壓力感受器、強效喚醒副交感神經。這有助於重塑大腦的化學受器斜率，讓您在睡前獲得極致沉靜。`;
-          
-          medalEmoji = "🌙";
-          medalTitle = "安神極致靜心流";
-          medalDesc = `您的指尖操作與經典 4-7-8 安神法完美契合。透過 7 秒的憋氣蓄能與 8 秒的極致長呼，您成功下調了交感神經，為全身創造了高質感的舒壓與助眠氛圍。`;
-          medalBgClass = "from-indigo-950 to-zen-900 border-indigo-500 text-indigo-100";
-          
-          midStageText = "7秒屏息";
-          lateStageText = "8秒極釋";
-        } else if (methodId === 'box') {
-          finalRR = 3.75;
-          finalIE = 1.0;
-          finalVA = 4.5;
-          vdRatio = 23;
-          interpretation = `<strong>【箱型減壓：完成引導】</strong><br>您已成功跟隨完成箱型呼吸法。這種等長 (4s) 的四階段循環，能阻斷因緊急狀況產生的急性交感風暴，均衡體內酸鹼 pH 值。本法推薦在重要演講、高壓決策前使用，能使大腦保持不缺氧的極限冷靜。`;
-          
-          medalEmoji = "🛡️";
-          medalTitle = "戰術等長冷靜態";
-          medalDesc = `海豹部隊戰術等長減壓。透過吸氣、憋氣、吐氣、憋氣的四象等寬轉換，您成功在高難度的觸壓交互中重塑了中樞對恐懼/緊繃的自主掌控。`;
-          medalBgClass = "from-slate-800 to-zen-900 border-slate-600 text-slate-100";
-
-          midStageText = "吸憋切換";
-          lateStageText = "等長歸零";
-        } else { // coherent
-          finalRR = 6.0;
-          finalIE = 1.0;
-          finalVA = 5.1;
-          vdRatio = 18;
-          interpretation = `<strong>【同頻諧振：完成引導】</strong><br>完美的 5-5 秒同步諧振！在醫學上，每分鐘 6 次呼吸能引起肺部牽張反射與自主神經血管運動最完美的諧振。這能使您的死腔損耗比例壓到極低，達成最省力、最高氧合的通氣狀態。`;
-          
-          medalEmoji = "🌊";
-          medalTitle = "同頻諧振諧振態";
-          medalDesc = `心肺物理耦合的巔峰。每分鐘 6 次的深緩呼吸成功激發了心血管運動與肺牽張反射的黃金諧振（Resonant Frequency），死腔損耗壓低，能量效率極高。`;
-          medalBgClass = "from-teal-950 to-zen-900 border-teal-500 text-teal-100";
-
-          midStageText = "同頻勻吸";
-          lateStageText = "諧振調適";
-        }
-
-        trendBadgeText = "引導訓練 🧘";
-        trendBadgeClass = "bg-indigo-100 text-indigo-800 border border-indigo-200";
-        if (syncPercent >= 85) {
-          stabilityBadgeText = "完美同步 🏆";
-          stabilityBadgeClass = "bg-emerald-100 text-emerald-800 border border-emerald-200";
-          trajectoryInterpretation = `您的指尖操作與引導環動態縮放高度一致，達標率達 <strong>${syncPercent}%</strong>。這意味著您的呼吸反射已成功與功法時間軸建立和諧耦合。`;
-        } else if (syncPercent >= 60) {
-          stabilityBadgeText = "部分契合 👍";
-          stabilityBadgeClass = "bg-amber-100 text-amber-800 border border-amber-200";
-          trajectoryInterpretation = `您的指尖操作與引導環同步達標率為 <strong>${syncPercent}%</strong>。在吸氣/憋氣或憋氣/呼氣的轉換瞬間有輕微跟隨脫節，這在初學引導時非常正常。`;
-        } else {
-          stabilityBadgeText = "待加強 ⚠️";
-          stabilityBadgeClass = "bg-rose-100 text-rose-800 border border-rose-200";
-          trajectoryInterpretation = `您的引導達標率為 <strong>${syncPercent}%</strong>。您在按壓螢幕時，可能依然依照習慣的自發慣性呼吸。建議再次練習時，專注於外圈光環與提示。`;
-        }
-      }
-
-      // --- 渲染數據至報告頁面 ---
-      document.getElementById('result-rr').innerHTML = `${finalRR} <span class="text-xs font-normal">BPM</span>`;
-      document.getElementById('result-ie').innerText = `1:${safeToFixed(1/finalIE, 1)}`;
-      document.getElementById('result-va').innerHTML = `${finalVA} <span class="text-xs font-normal">L/m</span>`;
-      document.getElementById('result-vd-ratio').innerText = `${vdRatio}%`;
-      document.getElementById('result-interpretation').innerHTML = interpretation;
-      
-      document.getElementById('result-trajectory').innerHTML = trajectoryInterpretation;
-      const bTrend = document.getElementById('badge-trend');
-      const bStability = document.getElementById('badge-stability');
-      bTrend.innerText = trendBadgeText;
-      bTrend.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${trendBadgeClass}`;
-      bStability.innerText = stabilityBadgeText;
-      bStability.className = `px-2.5 py-1 rounded-full text-[10px] font-bold ${stabilityBadgeClass}`;
-
-      // --- 渲染全新升級：身心呼吸表型勳章 ---
-      const mCard = document.getElementById('phenotype-medal-card');
-      const mIcon = document.getElementById('phenotype-medal-icon');
-      const mTitle = document.getElementById('phenotype-title');
-      const mDesc = document.getElementById('phenotype-long-desc');
-
-      mCard.className = `bg-gradient-to-br ${medalBgClass} rounded-2xl p-5 text-white shadow-xl space-y-4 relative overflow-hidden border`;
-      mIcon.innerText = medalEmoji;
-      mTitle.innerText = medalTitle;
-      mDesc.innerHTML = medalDesc;
-
-      // --- 渲染時間分期標籤軸 ---
-      document.getElementById('timeline-stage-mid').innerText = midStageText;
-      document.getElementById('timeline-stage-late').innerText = lateStageText;
-
-      // --- 執行：單次呼吸吸吐時序與波形視覺化 ---
-      renderFeedbackSpirogramChart(mode, stableDataForViz, methodId);
-      renderFeedbackBreathBars(mode, stableDataForViz, methodId);
-
-      lucide.createIcons();
-
-      appState.currentSession = {
-        id: Date.now(),
-        date: new Date().toLocaleDateString('zh-TW', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'}),
-        mode: mode === 'free' ? `自由檢測 (${appState.freeMode === 'quick' ? '快速' : (appState.freeMode === 'deep' ? '深度' : '不限時')})` : `引導練習 (${methodId})`,
-        rr: finalRR,
-        ie: finalIE,
-        va: finalVA,
-        emoji: '😄',
-        notes: ''
-      };
-
-      resetEmojiButtons();
-    }
-
-    // 實作肺通氣量曲線模擬 (Synthetic Spirogram Curve)
-    function renderFeedbackSpirogramChart(mode, stableData, methodId) {
-      const canvas = document.getElementById('feedbackSpirogramChart');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      
-      if (window.feedbackChartInstance) {
-        window.feedbackChartInstance.destroy();
-      }
-
-      let elapsed = 0;
-      const labels = [0];
-      const dataPoints = [0];
-
-      if (mode === 'free') {
-        stableData.forEach((b) => {
-          const peakVolume = Math.min(100, 35 + b.ti_seconds * 15);
-          elapsed += b.ti_seconds;
-          labels.push(parseFloat(elapsed.toFixed(1)));
-          dataPoints.push(peakVolume);
-
-          elapsed += b.te_seconds;
-          labels.push(parseFloat(elapsed.toFixed(1)));
-          dataPoints.push(5); 
-        });
-      } else {
-        const cycles = 3;
-        if (methodId === '478') {
-          for (let i = 0; i < cycles; i++) {
-            elapsed += 4;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(90);
-            elapsed += 7;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(90);
-            elapsed += 8;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(5);
-          }
-        } else if (methodId === 'box') {
-          for (let i = 0; i < cycles; i++) {
-            elapsed += 4;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(90);
-            elapsed += 4;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(90);
-            elapsed += 4;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(5);
-            elapsed += 4;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(5);
-          }
-        } else { 
-          for (let i = 0; i < cycles; i++) {
-            elapsed += 5;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(90);
-            elapsed += 5;
-            labels.push(parseFloat(elapsed.toFixed(1)));
-            dataPoints.push(5);
-          }
-        }
-      }
-
-      window.feedbackChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: '模擬肺通氣量 (Simulated Lung Volume %)',
-            data: dataPoints,
-            borderColor: '#6E755D', 
-            backgroundColor: 'rgba(110, 117, 93, 0.12)',
-            borderWidth: 2,
-            tension: 0.45, 
-            fill: true,
-            pointRadius: 0, 
-            pointHoverRadius: 4,
-            pointBackgroundColor: '#C2A687'
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  return `時間: ${context.label}s | 模擬肺容量: ${Math.round(context.raw)}%`;
-                }
-              }
-            }
-          },
-          scales: {
-            y: {
-              min: 0,
-              max: 110,
-              display: false 
-            },
-            x: {
-              title: {
-                display: true,
-                text: '累積時間軌跡 (秒)',
-                font: { size: 9, weight: 'bold' },
-                color: '#8E947A'
-              },
-              grid: { display: false },
-              ticks: { font: { size: 8 } }
-            }
-          }
-        }
-      });
-    }
-
-    // 實作分段呼吸比例條 (Breath Stacked Duration Bars)
-    function renderFeedbackBreathBars(mode, stableData, methodId) {
-      const container = document.getElementById('feedback-breath-bars');
-      if (!container) return;
-      container.innerHTML = '';
-
-      if (mode === 'free') {
-        stableData.forEach((b, idx) => {
-          const row = document.createElement('div');
-          row.className = "text-[10px] space-y-1 p-2 bg-zen-50/40 rounded-xl border border-zen-100/50 shrink-0";
-
-          const info = document.createElement('div');
-          info.className = "flex justify-between font-bold text-zen-700";
-          info.innerHTML = `
-            <span>呼吸週期 #${idx + 1} (BPM: ${Math.round(b.instant_rr)})</span>
-            <span class="text-zen-500">I:E 吸吐比 = 1 : ${safeToFixed(1/b.ie_ratio, 1)}</span>
-          `;
-
-          const barContainer = document.createElement('div');
-          barContainer.className = "w-full h-4 bg-zen-100 rounded-lg overflow-hidden flex text-[8px] font-bold text-white text-center font-mono";
-
-          const inhaleWidth = (b.ti_seconds / b.ttot_seconds) * 100;
-          const exhaleWidth = (b.te_seconds / b.ttot_seconds) * 100;
-
-          const inhaleBar = document.createElement('div');
-          inhaleBar.className = "bg-zen-500 flex items-center justify-center transition-all duration-500";
-          inhaleBar.style.width = `${inhaleWidth}%`;
-          inhaleBar.innerText = `吸 ${b.ti_seconds}s`;
-
-          const exhaleBar = document.createElement('div');
-          exhaleBar.className = "bg-zen-accent flex items-center justify-center text-zen-900 transition-all duration-500";
-          exhaleBar.style.width = `${exhaleWidth}%`;
-          exhaleBar.innerText = `吐 ${b.te_seconds}s`;
-
-          barContainer.appendChild(inhaleBar);
-          barContainer.appendChild(exhaleBar);
-
-          row.appendChild(info);
-          row.appendChild(barContainer);
-          container.appendChild(row);
-        });
-      } else {
-        const config = guidedMethods[methodId];
-        const row = document.createElement('div');
-        row.className = "text-[10px] space-y-1.5 p-2 bg-zen-50/40 rounded-xl border border-zen-100/50 shrink-0";
-
-        const info = document.createElement('div');
-        info.className = "flex justify-between font-bold text-zen-700";
-        info.innerHTML = `
-          <span>引導功法標準循環分配</span>
-          <span class="text-zen-accent font-extrabold">${config.title.split(' ')[0]}</span>
-        `;
-
-        const barContainer = document.createElement('div');
-        barContainer.className = "w-full h-4 bg-zen-100 rounded-lg overflow-hidden flex text-[8px] font-bold text-white text-center font-mono";
-
-        const totalSec = config.timeline.reduce((acc, t) => acc + t.sec, 0);
-
-        config.timeline.forEach(step => {
-          const stepWidth = (step.sec / totalSec) * 100;
-          const stepBar = document.createElement('div');
-          
-          let stepBg = "bg-slate-400";
-          let stepText = "text-white";
-          let phaseName = "";
-          if (step.phase === 'inhale') { stepBg = "bg-zen-500"; phaseName = "吸"; }
-          if (step.phase === 'hold') { stepBg = "bg-amber-400"; stepText = "text-zen-900"; phaseName = "憋"; }
-          if (step.phase === 'exhale') { stepBg = "bg-zen-accent"; stepText = "text-zen-900"; phaseName = "吐"; }
-          if (step.phase === 'hold_post') { stepBg = "bg-slate-300"; stepText = "text-zen-800"; phaseName = "憋"; }
-
-          stepBar.className = `${stepBg} ${stepText} flex items-center justify-center transition-all duration-500`;
-          stepBar.style.width = `${stepWidth}%`;
-          stepBar.innerText = `${phaseName} ${step.sec}s`;
-
-          barContainer.appendChild(stepBar);
-        });
-
-        row.appendChild(info);
-        row.appendChild(barContainer);
-        container.appendChild(row);
-      }
-    }
-
-    function selectEmoji(emoji, btn) {
-      appState.currentEmoji = emoji;
-      resetEmojiButtons();
-      btn.classList.remove('bg-zen-50', 'border-transparent');
-      btn.classList.add('bg-zen-100', 'border-zen-400');
-    }
-
-    function resetEmojiButtons() {
-      const btns = document.querySelectorAll('.emoji-btn');
-      btns.forEach(btn => {
-        btn.classList.remove('bg-zen-100', 'border-zen-400');
-        btn.classList.add('bg-zen-50', 'border-transparent');
-      });
-    }
-
-    // --- 6. 儲存與歷史資料庫 (Data Persistence) ---
-    function saveSession() {
-      if (!appState.currentSession) return;
-
-      appState.currentSession.emoji = appState.currentEmoji;
-      appState.currentSession.notes = document.getElementById('feedback-notes').value;
-
-      appState.history.unshift(appState.currentSession); 
-      localStorage.setItem('breath_sensing_history', JSON.stringify(appState.history));
-
-      showToast('紀錄儲存成功！');
-      document.getElementById('feedback-notes').value = '';
-      appState.currentSession = null;
-      
-      changeScreen('history');
-    }
-
-    function loadHistoryFromLocal() {
-      try {
-        const stored = localStorage.getItem('breath_sensing_history');
-        if (stored) {
-          appState.history = JSON.parse(stored);
-        } else {
-          appState.history = [];
-        }
-      } catch (e) {
-        appState.history = [];
-      }
-    }
-
-    function clearHistory() {
-      if (confirm('確定要清除所有呼吸練習歷史紀錄嗎？')) {
-        appState.history = [];
-        localStorage.removeItem('breath_sensing_history');
-        renderHistoryList();
-        renderHistoryChart();
-        showToast('歷史紀錄已全部清除。');
-      }
-    }
-
-    function renderHistoryList() {
-      const container = document.getElementById('history-list');
-      container.innerHTML = '';
-
-      if (appState.history.length === 0) {
-        container.innerHTML = '<div class="text-center py-8 text-xs text-zen-400">尚未累積 any 練習紀錄</div>';
-        return;
-      }
-
-      appState.history.forEach(item => {
-        const div = document.createElement('div');
-        div.className = "bg-zen-50/50 border border-zen-100 p-4 rounded-xl flex justify-between items-center shrink-0";
-        div.innerHTML = `
-          <div class="space-y-1">
-            <div class="flex items-center space-x-2">
-              <span class="text-xs font-bold text-zen-800">${item.mode}</span>
-              <span class="text-[9px] text-zen-400">${item.date}</span>
-            </div>
-            <p class="text-[10px] text-zen-500">平均速率: ${item.rr} BPM | 估計肺泡通氣 VA: ${item.va} L/m</p>
-            ${item.notes ? `<p class="text-[10px] italic text-zen-400 mt-1 bg-white p-1 rounded border border-dashed border-zen-100">「${item.notes}」</p>` : ''}
-          </div>
-          <div class="text-2xl">${item.emoji}</div>
-        `;
-        container.appendChild(div);
-      });
-    }
-
-    // --- 7. Chart.js 數據視覺化 (History Chart) ---
-    let historyChartInstance = null;
-
-    function renderHistoryChart() {
-      const ctx = document.getElementById('historyChart').getContext('2d');
-      if (historyChartInstance) {
-        historyChartInstance.destroy();
-      }
-
-      if (appState.history.length === 0) {
-        return;
-      }
-
-      const recentHistory = [...appState.history].slice(0, 7).reverse();
-      const labels = recentHistory.map(item => item.date.split(' ')[0]); 
-      const rrs = recentHistory.map(item => item.rr);
-
-      historyChartInstance = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: '平均呼吸頻率 (BPM)',
-            data: rrs,
-            borderColor: '#6E755D',
-            backgroundColor: 'rgba(110, 117, 93, 0.08)',
-            borderWidth: 2,
-            tension: 0.3,
-            fill: true,
-            pointBackgroundColor: '#C2A687',
-            pointBorderColor: '#fff',
-            pointRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: false
-            }
-          },
-          scales: {
-            y: {
-              min: 0,
-              max: 30,
-              ticks: {
-                stepSize: 5,
-                font: { size: 9 }
-              },
-              grid: {
-                color: 'rgba(0, 0, 0, 0.03)'
-              }
-            },
-            x: {
-              ticks: {
-                font: { size: 9 }
-              },
-              grid: {
-                display: false
-              }
-            }
-          }
-        }
-      });
-    }
-  </script>
+  }
+  return buf;
+}
+
+// G4 = 392 Hz, C4 = 261.63 Hz
+const FREQ_G4 = 196.00;  // G3（降八度）
+const FREQ_C4 = 130.81;  // C3（降八度）
+</script>
 </body>
 </html>
