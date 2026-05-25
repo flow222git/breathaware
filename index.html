@@ -38,9 +38,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:cen
 .orb-ring{position:absolute;inset:-14px;border-radius:50%;border:1.5px solid rgba(42,107,90,.2);animation:ring-pulse 3s ease-in-out infinite}
 .orb-ring2{position:absolute;inset:-30px;border-radius:50%;border:1px solid rgba(42,107,90,.1);animation:ring-pulse 3s ease-in-out infinite .6s}
 @keyframes ring-pulse{0%,100%{opacity:.4;transform:scale(1)}50%{opacity:1;transform:scale(1.03)}}
-.orb-idle{text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:10px}
-.orb-idle-main{font-family:'DM Serif Display',serif;font-size:22px;color:rgba(255,255,255,.88);letter-spacing:.03em}
-.orb-idle-divider{width:32px;height:1px;background:rgba(255,255,255,.3)}
+/* 觸控區只蓋住圓圈範圍 */
+#touchZone{position:absolute;inset:0;z-index:50;touch-action:none;user-select:none;border-radius:50%}
+.zone-hint{position:absolute;bottom:calc(100% - 56px - 390px - 20px);left:0;right:0;display:flex;align-items:center;justify-content:center;gap:0;pointer-events:none;padding:0 20px;opacity:0;transition:opacity .4s}
+.zone-hint.show{opacity:1}
+.zone-hint-left,.zone-hint-right{flex:1;text-align:center;font-size:12px;color:var(--ink3);letter-spacing:.04em}
+.zone-hint-divider{width:1px;height:20px;background:var(--paper3);margin:0 12px}
+
+.orb-idle{text-align:center;pointer-events:none;display:flex;flex-direction:column;align-items:center;gap:8px}
+.orb-idle-main{font-family:'DM Serif Display',serif;font-size:20px;color:rgba(255,255,255,.88);letter-spacing:.03em}
+.orb-idle-sub{font-size:14px;color:rgba(255,255,255,.65);letter-spacing:.03em}
+.orb-idle-divider{width:32px;height:1px;background:rgba(255,255,255,.3);margin:2px 0}
 .orb-active{width:90%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;pointer-events:none}
 canvas#waveform{width:100%;height:119px;display:block;border-radius:4px}
 .orb-phase-row{display:flex;flex-direction:column;align-items:center;gap:4px}
@@ -130,13 +138,45 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 .feeling-note{width:100%;border:1px solid var(--paper3);border-radius:var(--radius-sm);background:var(--paper2);padding:12px;font-family:inherit;font-size:13px;color:var(--ink);resize:none;outline:none;margin-bottom:16px}
 .save-btn{width:100%;padding:14px;border-radius:var(--radius);background:var(--accent);color:#fff;border:none;font-family:inherit;font-size:15px;cursor:pointer;letter-spacing:.02em}
 
+
+
+.home-logo{font-family:'DM Serif Display',serif;font-size:36px;color:var(--accent);font-style:italic;letter-spacing:.02em;margin-bottom:10px;text-align:center}
+.home-slogan{font-size:15px;color:var(--ink3);letter-spacing:.08em;margin-bottom:52px;text-align:center}
+
+/* ── HOME PAGE ── */
+#page-home{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px 56px;overflow-y:auto;visibility:hidden;opacity:0;pointer-events:none}
+#page-home.active{visibility:visible;opacity:1;pointer-events:auto}
+.home-logo{font-family:'DM Serif Display',serif;font-size:34px;color:var(--accent);font-style:italic;letter-spacing:.02em;margin-bottom:8px;text-align:center}
+.home-slogan{font-size:14px;color:var(--ink3);letter-spacing:.1em;margin-bottom:48px;text-align:center}
+
+/* 單一示意圓 */
+.demo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:44px}
+.demo-orb-outer{position:relative;width:338px;height:338px;margin-bottom:24px}
+.demo-orb-ring{position:absolute;inset:-10px;border-radius:50%;border:1.5px solid rgba(42,107,90,.15)}
+.demo-orb-ring2{position:absolute;inset:-22px;border-radius:50%;border:1px solid rgba(42,107,90,.08)}
+.demo-orb{width:338px;height:338px;border-radius:50%;position:relative;overflow:hidden;transition:box-shadow .6s}
+/* 左右半邊疊層 */
+.demo-half{position:absolute;top:0;bottom:0;width:50%;transition:opacity 2.2s ease, background 2.8s ease}
+.demo-half.left{left:0;border-radius:200px 0 0 200px}
+.demo-half.right{right:0;border-radius:0 200px 200px 0}
+/* 中間文字 */
+.demo-orb-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
+.demo-orb-main{font-family:'DM Serif Display',serif;font-size:22px;color:rgba(255,255,255,.92);letter-spacing:.03em;transition:opacity 1.6s ease}
+.demo-orb-sub{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:.06em;transition:opacity 1.6s ease}
+/* 底部提示文字 */
+.demo-caption{font-size:13px;color:var(--ink3);letter-spacing:.04em;text-align:center;min-height:20px;transition:opacity 1.6s ease}
+
+/* GO 方塊按鈕 */
+.go-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;padding:7px 24px;border-radius:var(--radius-sm);background:#daeaf5;color:#2d5f8a;border:none;cursor:pointer;letter-spacing:.18em;transition:transform .15s;box-shadow:0 2px 12px rgba(45,95,138,.12)}
+.go-btn:active{transform:scale(.97)}
+
 .empty-state{text-align:center;padding:60px 20px;color:var(--ink3)}
 .empty-icon{font-size:40px;margin-bottom:12px;opacity:.4}
 </style>
 </head>
 <body>
 
-<nav>
+<nav id="mainNav" style="display:none">
   <div class="logo"><span>Breeeeeathe~</span></div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showPage('sense')">覺察</button>
@@ -144,26 +184,51 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
   </div>
 </nav>
 
-<div id="page-sense" class="page active">
+<!-- HOME PAGE -->
+<div id="page-home" class="page active">
+  <div class="home-logo">Breeeeeathe~</div>
+  <div class="home-slogan">用呼吸了解自己</div>
+
+  <div class="demo-wrap">
+    <div class="demo-orb-outer">
+      <div class="demo-orb-ring"></div>
+      <div class="demo-orb-ring2"></div>
+      <div class="demo-orb" id="demoOrb">
+        <div class="demo-half left" id="demoLeft"></div>
+        <div class="demo-half right" id="demoRight"></div>
+        <div class="demo-orb-text">
+          <div class="demo-orb-main" id="demoMain">吸氣</div>
+          <div class="demo-orb-sub" id="demoSub">按左邊</div>
+        </div>
+      </div>
+    </div>
+    <div class="demo-caption" id="demoCaption">左半邊按住 = 吸氣</div>
+  </div>
+
+  <button class="go-btn" onclick="showPage('sense')">GO</button>
+</div>
+
+<div id="page-sense" class="page">
   <div class="status-chip" id="statusChip"></div>
 
   <!-- 圓圈在最上方 -->
   <div class="orb-wrap">
     <div class="orb-ring"></div><div class="orb-ring2"></div>
-    <div class="orb" id="orb"
-      onmousedown="startInhale()" onmouseup="startExhale()"
-      ontouchstart="ev(event);startInhale()" ontouchend="ev(event);startExhale()">
+    <!-- 觸控區蓋在圓圈上，左吸右吐 -->
+    <div id="touchZone"></div>
+    <div class="orb" id="orb">
       <!-- 初始說明 -->
       <div class="orb-idle" id="orbIdle">
-        <div class="orb-idle-main">吸氣時按住</div>
+        <div class="orb-idle-main">左邊按住 吸氣</div>
         <div class="orb-idle-divider"></div>
-        <div class="orb-idle-main">吐氣時放開</div>
+        <div class="orb-idle-sub">右邊按住 吐氣</div>
+        <div class="orb-idle-sub" style="margin-top:4px;opacity:.6">放開 屏息</div>
       </div>
-      <!-- 練習中：波形置中 + 相位文字 + 狀態標題（有值才顯示）-->
+      <!-- 練習中：波形置中 + 相位文字 + 狀態標題 -->
       <div class="orb-active" id="orbActive" style="display:none">
         <canvas id="waveform"></canvas>
         <div class="orb-phase-row">
-          <div class="orb-phase-label" id="orbMain">吸氣中</div>
+          <div class="orb-phase-label" id="orbMain">屏息中</div>
           <div class="orb-state-name" id="orbStateName"></div>
         </div>
       </div>
@@ -401,26 +466,8 @@ function analyzeTrajectory(breaths){
   return{early:e,mid:m,late:l,findings,stateKey,overallBpm,overallIE,overallStab};
 }
 
-// ── SESSION STATE ──
-// 呼吸計時邏輯：
-//   吸氣 = pressStart → release（放開）
-//   吐氣 = release → 下一次 pressStart
-// 所以完整一次呼吸在「下一次按下」時才存入 breaths[]
-let pressing=false,pressStart=0,exhaleStart=0;
-let breaths=[],wavePoints=[];
-let sessionActive=false,sessionStart=0;
-let timerInterval=null,currentPhase='idle';
-let pendingInhaleMs=0; // 等待吐氣完成的吸氣時長
-const waveCanvas=document.getElementById('waveform');
-const waveCtx=waveCanvas.getContext('2d');
-let waveRAF=null;
+// ── SESSION STATE (舊版已移除，見下方新版) ──
 
-function resizeWave(){
-  waveCanvas.width=waveCanvas.offsetWidth*devicePixelRatio;
-  waveCanvas.height=waveCanvas.offsetHeight*devicePixelRatio;
-}
-resizeWave();
-window.addEventListener('resize',resizeWave);
 
 // ── ORB COLOR ENGINE ──
 // 吸氣：綠色系，隨時間從淺綠→深綠（越深越充滿）
@@ -453,31 +500,37 @@ function lerpColor(a, b, t) {
   return '#' + [rr, rg, rb].map(v => v.toString(16).padStart(2, '0')).join('');
 }
 
+const HOLD_COLORS = [
+  ['#c9b46a', '#8a7230'],
+  ['#e8d89a', '#b09540'],
+];
+
 function animateOrbColor(phase) {
   cancelAnimationFrame(orbColorRAF);
   orbPhaseStart = Date.now();
-  const maxMs = phase === 'inhale' ? 8000 : 10000; // saturate over 8s inhale / 10s exhale
+  const maxMs = phase==='inhale'?8000:phase==='exhale'?10000:6000;
   const orb = document.getElementById('orb');
-
   function frame() {
     const elapsed = Date.now() - orbPhaseStart;
     const t = Math.min(elapsed / maxMs, 1);
-    const eased = 1 - Math.pow(1 - t, 2); // ease-out
-
-    let inner, outer, shadow;
-    if (phase === 'inhale') {
-      inner = lerpColor(INHALE_COLORS[0][0], INHALE_COLORS[1][0], eased);
-      outer = lerpColor(INHALE_COLORS[0][1], INHALE_COLORS[1][1], eased);
-      shadow = `0 8px 40px rgba(42,107,90,${0.18 + eased * 0.22}), 0 2px 8px rgba(42,107,90,${0.1 + eased * 0.15})`;
+    const eased = 1 - Math.pow(1 - t, 2);
+    let inner,outer,shadow;
+    if(phase==='inhale'){
+      inner=lerpColor(INHALE_COLORS[0][0],INHALE_COLORS[1][0],eased);
+      outer=lerpColor(INHALE_COLORS[0][1],INHALE_COLORS[1][1],eased);
+      shadow=`0 8px 40px rgba(42,107,90,${0.18+eased*0.22}), 0 2px 8px rgba(42,107,90,${0.1+eased*0.15})`;
+    } else if(phase==='exhale'){
+      inner=lerpColor(EXHALE_COLORS[0][0],EXHALE_COLORS[1][0],eased);
+      outer=lerpColor(EXHALE_COLORS[0][1],EXHALE_COLORS[1][1],eased);
+      shadow=`0 8px 40px rgba(45,95,138,${0.25-eased*0.12}), 0 2px 8px rgba(45,95,138,${0.12-eased*0.06})`;
     } else {
-      inner = lerpColor(EXHALE_COLORS[0][0], EXHALE_COLORS[1][0], eased);
-      outer = lerpColor(EXHALE_COLORS[0][1], EXHALE_COLORS[1][1], eased);
-      shadow = `0 8px 40px rgba(45,95,138,${0.25 - eased * 0.12}), 0 2px 8px rgba(45,95,138,${0.12 - eased * 0.06})`;
+      inner=lerpColor(HOLD_COLORS[0][0],HOLD_COLORS[1][0],eased);
+      outer=lerpColor(HOLD_COLORS[0][1],HOLD_COLORS[1][1],eased);
+      shadow=`0 8px 40px rgba(180,150,60,${0.2+eased*0.1}), 0 2px 8px rgba(180,150,60,0.1)`;
     }
-
-    orb.style.background = `radial-gradient(circle at 38% 36%, ${inner}, ${outer})`;
-    orb.style.boxShadow = shadow;
-    if (t < 1) orbColorRAF = requestAnimationFrame(frame);
+    orb.style.background=`radial-gradient(circle at 38% 36%, ${inner}, ${outer})`;
+    orb.style.boxShadow=shadow;
+    if(t<1) orbColorRAF=requestAnimationFrame(frame);
   }
   frame();
 }
@@ -489,56 +542,113 @@ function resetOrbColor() {
   orb.style.boxShadow = '0 8px 40px rgba(42,107,90,.18), 0 2px 8px rgba(42,107,90,.1)';
 }
 
-function startInhale(){
-  if(!sessionActive){
-    sessionActive=true;sessionStart=Date.now();
-    document.getElementById('stopBtn').classList.add('show');
-    timerInterval=setInterval(updateTimer,1000);
-    // 第一次按下：切換圓圈內容
-    document.getElementById('orbIdle').style.display='none';
-    document.getElementById('orbActive').style.display='flex';
-    resizeWave();
-  }
+// ── SESSION STATE ──
+// 左按=吸氣 右按=吐氣 放開=屏息
+let currentSide=null; // 'inhale'|'exhale'|null
+let phaseStart=0,holdStart=0;
+let breaths=[],wavePoints=[];
+let sessionActive=false,sessionStart=0;
+let timerInterval=null,holdInterval=null;
+let pendingInhale=null; // {inhaleMs, exhaleMs, holdAfterExhale}
 
-  // 結算上一次吐氣
-  if(pendingInhaleMs>0 && currentPhase==='exhaling'){
-    const exhaleMs=Date.now()-exhaleStart;
-    if(exhaleMs>200){
-      breaths.push({inhaleMs:pendingInhaleMs,exhaleMs,ts:Date.now()});
-      updateLiveStats();
-    }
-    pendingInhaleMs=0;
-  }
+const waveCanvas=document.getElementById('waveform');
+const waveCtx=waveCanvas.getContext('2d');
+let waveRAF=null;
 
-  pressing=true;pressStart=Date.now();currentPhase='inhaling';
-  document.getElementById('orb').classList.add('pressed');
-  document.getElementById('orbMain').textContent='吸氣中';
-  const chip=document.getElementById('statusChip');
-  chip.textContent='吸氣';chip.className='status-chip inhaling';
+function resizeWave(){
+  waveCanvas.width=waveCanvas.offsetWidth*devicePixelRatio;
+  waveCanvas.height=waveCanvas.offsetHeight*devicePixelRatio;
+}
+resizeWave();
+window.addEventListener('resize',resizeWave);
+
+function getSide(event){
+  const x=event.touches?event.touches[0].clientX:event.clientX;
+  return x<window.innerWidth/2?'inhale':'exhale';
+}
+function onZoneDown(event){
+  const side=getSide(event);
+  if(side==='inhale') handleInhaleStart();
+  else handleExhaleStart();
+}
+function onZoneUp(event){ handleRelease(); }
+
+function startHoldTracking(){
+  holdStart=Date.now();
+  holdInterval=setInterval(()=>{
+    if(sessionActive) wavePoints.push({t:Date.now()-sessionStart,phase:0.5});
+  },150);
+}
+function stopHoldTracking(){ clearInterval(holdInterval);holdInterval=null; }
+
+function handleInhaleStart(){
+  if(!sessionActive) beginSession();
+  // 結算前一次完整呼吸
+  if(pendingInhale&&pendingInhale.exhaleMs>0){
+    const holdMs=pendingInhale.holdAfterExhale?Date.now()-pendingInhale.holdAfterExhale:0;
+    breaths.push({inhaleMs:pendingInhale.inhaleMs,exhaleMs:pendingInhale.exhaleMs,holdMs,ts:Date.now()});
+    pendingInhale=null;
+    if(breaths.length>2) updateLiveStats(); // 前兩次暖機不列入分析
+  }
+  stopHoldTracking();
+  currentSide='inhale';phaseStart=Date.now();
   wavePoints.push({t:Date.now()-sessionStart,phase:1});
   if(!waveRAF)drawWave();
+  setOrbPhase('吸氣中');
   animateOrbColor('inhale');
-  playOrgan(FREQ_G4, 280);
+  playOrgan(FREQ_G4,280);
 }
 
-function startExhale(){
-  if(!pressing)return;
-  pressing=false;
-  const inhaleMs=Date.now()-pressStart;
-  if(inhaleMs<300){currentPhase='idle';return;}
-  pendingInhaleMs=inhaleMs;
-  exhaleStart=Date.now();
-  currentPhase='exhaling';
-  document.getElementById('orb').classList.remove('pressed');
-  document.getElementById('orbMain').textContent='吐氣中';
-  const chip=document.getElementById('statusChip');
-  chip.textContent='吐氣';chip.className='status-chip exhaling';
+function handleExhaleStart(){
+  if(!sessionActive) beginSession();
+  if(currentSide==='inhale'){
+    const inhaleMs=Date.now()-phaseStart;
+    if(inhaleMs>=300) pendingInhale={inhaleMs,exhaleMs:0,holdAfterExhale:null};
+  }
+  stopHoldTracking();
+  currentSide='exhale';phaseStart=Date.now();
   wavePoints.push({t:Date.now()-sessionStart,phase:0});
+  if(!waveRAF)drawWave();
+  setOrbPhase('吐氣中');
   animateOrbColor('exhale');
-  playOrgan(FREQ_C4, 350);
+  playOrgan(FREQ_C4,350);
 }
 
-function recordBreath(){} // 已廢棄，邏輯移入 startInhale
+function handleRelease(){
+  if(!sessionActive) return;
+  const now=Date.now();
+  if(currentSide==='inhale'){
+    const inhaleMs=now-phaseStart;
+    if(inhaleMs>=300) pendingInhale={inhaleMs,exhaleMs:0,holdAfterExhale:null};
+  } else if(currentSide==='exhale'&&pendingInhale){
+    const exhaleMs=now-phaseStart;
+    if(exhaleMs>=200){pendingInhale.exhaleMs=exhaleMs;pendingInhale.holdAfterExhale=now;}
+  }
+  currentSide=null;
+  wavePoints.push({t:now-sessionStart,phase:0.5});
+  startHoldTracking();
+  setOrbPhase('屏息中');
+  animateOrbColor('hold');
+  playOrgan(FREQ_E4,200);
+}
+
+function beginSession(){
+  sessionActive=true;sessionStart=Date.now();
+  document.getElementById('stopBtn').classList.add('show');
+  timerInterval=setInterval(updateTimer,1000);
+  document.getElementById('orbIdle').style.display='none';
+  document.getElementById('orbActive').style.display='flex';
+  resizeWave();
+}
+
+function setOrbPhase(text){
+  const el=document.getElementById('orbMain');
+  if(el.style.display!=='none'){el.textContent=text;}
+}
+
+function startInhale(){}
+function startExhale(){}
+function recordBreath(){}
 
 function updateLiveStats(){
   if(breaths.length===0)return;
@@ -585,35 +695,52 @@ function updateLiveStats(){
   }
 }
 
+function phaseY(phase,H){
+  if(phase===1)   return H*.12;   // 吸氣：頂部
+  if(phase===0.5) return H*.50;   // 屏息：中間
+  return H*.88;                    // 吐氣：底部
+}
+
 function drawWave(){
   const W=waveCanvas.width,H=waveCanvas.height;
   waveCtx.clearRect(0,0,W,H);
   if(wavePoints.length<2){waveRAF=requestAnimationFrame(drawWave);return}
   const now=Date.now()-sessionStart;
   const windowMs=20000;
-  const visible=[...wavePoints,{t:now,phase:pressing?1:0}];
+  // 當前即時位置
+  const livePhase=currentSide==='inhale'?1:currentSide==='exhale'?0:0.5;
+  const visible=[...wavePoints,{t:now,phase:livePhase}];
   const startT=Math.max(0,now-windowMs);
+
   waveCtx.beginPath();
   let first=true;
   for(let i=0;i<visible.length;i++){
     const p=visible[i];
     if(p.t<startT)continue;
     const x=((p.t-startT)/windowMs)*W;
-    const y=p.phase===1?H*.15:H*.85;
+    const y=phaseY(p.phase,H);
     if(first){waveCtx.moveTo(x,y);first=false}
-    else{const prev=visible[i-1];const px=((prev.t-startT)/windowMs)*W;waveCtx.lineTo(px+1,y);waveCtx.lineTo(x,y)}
+    else{
+      const prev=visible[i-1];
+      const px=((prev.t-startT)/windowMs)*W;
+      waveCtx.lineTo(px+1,y);
+      waveCtx.lineTo(x,y);
+    }
   }
-  const lastP=visible[visible.length-1];
-  waveCtx.lineTo(W,pressing?H*.15:H*.85);
+  waveCtx.lineTo(W,phaseY(livePhase,H));
   waveCtx.strokeStyle='rgba(255,255,255,.85)';
   waveCtx.lineWidth=2*devicePixelRatio;waveCtx.lineCap='round';waveCtx.stroke();
+
+  // fill
   waveCtx.lineTo(W,H);
   const firstVis=visible.find(p=>p.t>=startT);
   waveCtx.lineTo(((firstVis?firstVis.t:startT)-startT)/windowMs*W,H);
   waveCtx.closePath();
-  waveCtx.fillStyle='rgba(255,255,255,.08)';
+  waveCtx.fillStyle='rgba(255,255,255,.07)';
   waveCtx.fill();
-  waveCtx.fillStyle='rgba(255,255,255,.25)';
+
+  // tick marks
+  waveCtx.fillStyle='rgba(255,255,255,.2)';
   for(let t=Math.ceil(startT/5000)*5000;t<=now;t+=5000){
     const x=((t-startT)/windowMs)*W;
     waveCtx.fillRect(x,H-3*devicePixelRatio,devicePixelRatio,3*devicePixelRatio);
@@ -629,11 +756,12 @@ function updateTimer(){
 
 function endSession(){
   if(!sessionActive)return;
-  // 結算最後一次吐氣（如果有）
-  if(pendingInhaleMs>0 && currentPhase==='exhaling'){
-    const exhaleMs=Date.now()-exhaleStart;
-    if(exhaleMs>200) breaths.push({inhaleMs:pendingInhaleMs,exhaleMs,ts:Date.now()});
-    pendingInhaleMs=0;
+  stopHoldTracking();
+  // 結算最後一次呼吸
+  if(pendingInhale&&pendingInhale.exhaleMs>0){
+    const holdMs=pendingInhale.holdAfterExhale?Date.now()-pendingInhale.holdAfterExhale:0;
+    breaths.push({inhaleMs:pendingInhale.inhaleMs,exhaleMs:pendingInhale.exhaleMs,holdMs,ts:Date.now()});
+    pendingInhale=null;
   }
   sessionActive=false;clearInterval(timerInterval);
   cancelAnimationFrame(waveRAF);waveRAF=null;
@@ -687,8 +815,9 @@ function closeModal(){
 }
 
 function resetSession(){
-  breaths=[];wavePoints=[];pressing=false;currentPhase='idle';
-  pendingInhaleMs=0;sessionActive=false;
+  breaths=[];wavePoints=[];currentSide=null;
+  pendingInhale=null;sessionActive=false;
+  stopHoldTracking();
   document.getElementById('timerDisplay').textContent='0:00';
   document.getElementById('statBPM').textContent='—';
   document.getElementById('statIE').textContent='—';
@@ -875,12 +1004,108 @@ function showPage(name){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
-  const tabs=document.querySelectorAll('.nav-tab');
-  if(name==='sense')tabs[0].classList.add('active');
-  else if(name==='history'){tabs[1].classList.add('active');renderHistory()}
+  const nav=document.getElementById('mainNav');
+  if(name==='home'){
+    nav.style.display='none';
+  } else {
+    nav.style.display='flex';
+    const tabs=document.querySelectorAll('.nav-tab');
+    if(name==='sense')tabs[0].classList.add('active');
+    else if(name==='history'){tabs[1].classList.add('active');renderHistory();}
+  }
 }
 
 window.addEventListener('contextmenu',e=>e.preventDefault());
+
+// ── 首頁示意圓動畫 ──
+(function demoCycle(){
+  const orb=document.getElementById('demoOrb');
+  const left=document.getElementById('demoLeft');
+  const right=document.getElementById('demoRight');
+  const main=document.getElementById('demoMain');
+  const sub=document.getElementById('demoSub');
+  const caption=document.getElementById('demoCaption');
+  if(!orb)return;
+
+  const STEPS=[
+    {
+      leftBg:'rgba(42,107,90,.88)', rightBg:'rgba(42,107,90,.22)',
+      leftOp:1, rightOp:.25,
+      mainTxt:'吸氣', subTxt:'按左邊',
+      caption:'左半邊按住 = 吸氣',
+      shadow:'0 8px 40px rgba(42,107,90,.28)',
+      dur:3500  // 吸氣 3.5s
+    },
+    {
+      leftBg:'rgba(180,150,60,.65)', rightBg:'rgba(180,150,60,.65)',
+      leftOp:.7, rightOp:.7,
+      mainTxt:'屏息', subTxt:'放開',
+      caption:'放開 = 屏息',
+      shadow:'0 8px 40px rgba(160,130,50,.2)',
+      dur:2500  // 屏息 2.5s
+    },
+    {
+      leftBg:'rgba(45,95,138,.22)', rightBg:'rgba(45,95,138,.88)',
+      leftOp:.25, rightOp:1,
+      mainTxt:'吐氣', subTxt:'按右邊',
+      caption:'右半邊按住 = 吐氣',
+      shadow:'0 8px 40px rgba(45,95,138,.28)',
+      dur:3500  // 吐氣 3.5s
+    },
+    {
+      leftBg:'rgba(180,150,60,.65)', rightBg:'rgba(180,150,60,.65)',
+      leftOp:.7, rightOp:.7,
+      mainTxt:'屏息', subTxt:'放開',
+      caption:'放開 = 屏息',
+      shadow:'0 8px 40px rgba(160,130,50,.2)',
+      dur:2500  // 屏息 2.5s
+    },
+  ];
+
+  let step=0;
+  orb.style.background='#2e2e2e';
+
+  function next(){
+    if(!document.getElementById('demoOrb'))return;
+    const s=STEPS[step%STEPS.length];
+
+    // 先淡出文字
+    main.style.opacity='0';
+    sub.style.opacity='0';
+    caption.style.opacity='0';
+
+    setTimeout(()=>{
+      // 更換顏色（CSS transition 會做漸變）
+      left.style.background=s.leftBg;
+      right.style.background=s.rightBg;
+      left.style.opacity=s.leftOp;
+      right.style.opacity=s.rightOp;
+      orb.style.boxShadow=s.shadow;
+      // 更換文字後淡入
+      main.textContent=s.mainTxt;
+      sub.textContent=s.subTxt;
+      caption.textContent=s.caption;
+      setTimeout(()=>{
+        main.style.opacity='1';
+        sub.style.opacity='1';
+        caption.style.opacity='1';
+      }, 200);
+    }, 500); // 等文字淡出後再換
+
+    step++;
+    setTimeout(next, s.dur);
+  }
+  setTimeout(next,600);
+})();
+
+// 全螢幕觸控區事件綁定
+window.addEventListener('DOMContentLoaded',()=>{
+  const zone=document.getElementById('touchZone');
+  zone.addEventListener('mousedown', onZoneDown);
+  zone.addEventListener('mouseup',   onZoneUp);
+  zone.addEventListener('touchstart', e=>{e.preventDefault();onZoneDown(e);}, {passive:false});
+  zone.addEventListener('touchend',   e=>{e.preventDefault();onZoneUp(e);},   {passive:false});
+});
 
 // ── ORGAN AUDIO ENGINE ──
 // G4 = 392 Hz (吸氣), C4 = 261.63 Hz (吐氣)
@@ -992,6 +1217,7 @@ function makeImpulse(ctx, duration, decay) {
 // G4 = 392 Hz, C4 = 261.63 Hz
 const FREQ_G4 = 196.00;  // G3（降八度）
 const FREQ_C4 = 130.81;  // C3（降八度）
+const FREQ_E4 = 164.81;  // E3（G3 和 C3 中間）
 </script>
 </body>
 </html>
