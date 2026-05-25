@@ -140,33 +140,31 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 
 
 
-.home-logo{font-family:'DM Serif Display',serif;font-size:36px;color:var(--accent);font-style:italic;letter-spacing:.02em;margin-bottom:10px;text-align:center}
-.home-slogan{font-size:15px;color:var(--ink3);letter-spacing:.08em;margin-bottom:52px;text-align:center}
-
 /* ── HOME PAGE ── */
-#page-home{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 24px 56px;overflow-y:auto;visibility:hidden;opacity:0;pointer-events:none}
+#page-home{position:fixed;inset:0;overflow:hidden;visibility:hidden;opacity:0;pointer-events:none}
 #page-home.active{visibility:visible;opacity:1;pointer-events:auto}
-.home-logo{font-family:'DM Serif Display',serif;font-size:34px;color:var(--accent);font-style:italic;letter-spacing:.02em;margin-bottom:8px;text-align:center}
-.home-slogan{font-size:14px;color:var(--ink3);letter-spacing:.1em;margin-bottom:48px;text-align:center}
-
-/* 單一示意圓 */
-.demo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:44px}
-.demo-orb-outer{position:relative;width:338px;height:338px;margin-bottom:24px}
+.home-slider{display:flex;width:200%;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1)}
+.home-slide{width:50%;height:100%;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:52px 28px 48px;overflow-y:auto}
+.home-logo{font-family:'DM Serif Display',serif;font-size:34px;color:var(--accent);font-style:italic;letter-spacing:.02em;margin-bottom:6px;text-align:center}
+.home-slogan{font-size:13px;color:var(--ink3);letter-spacing:.1em;margin-bottom:40px;text-align:center}
+.home-intro{width:100%;max-width:320px;background:var(--paper2);border-radius:var(--radius);padding:28px 24px;margin-bottom:40px}
+.home-intro-p{font-size:15px;color:var(--ink2);line-height:1.8;margin-bottom:16px}
+.home-intro-p:last-child{margin-bottom:0;font-size:14px;color:var(--ink3);line-height:1.9}
+.home-nav-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;padding:7px 24px;border-radius:var(--radius-sm);background:#daeaf5;color:#2d5f8a;border:none;cursor:pointer;letter-spacing:.14em;transition:transform .15s;box-shadow:0 2px 12px rgba(45,95,138,.12)}
+.home-nav-btn:active{transform:scale(.97)}
+.demo-slide-title{font-size:12px;color:var(--ink3);letter-spacing:.1em;margin-bottom:24px;text-align:center}
+.demo-wrap{display:flex;flex-direction:column;align-items:center;margin-bottom:28px}
+.demo-orb-outer{position:relative;width:338px;height:338px;margin-bottom:20px}
 .demo-orb-ring{position:absolute;inset:-10px;border-radius:50%;border:1.5px solid rgba(42,107,90,.15)}
 .demo-orb-ring2{position:absolute;inset:-22px;border-radius:50%;border:1px solid rgba(42,107,90,.08)}
 .demo-orb{width:338px;height:338px;border-radius:50%;position:relative;overflow:hidden;transition:box-shadow .6s}
-/* 左右半邊疊層 */
-.demo-half{position:absolute;top:0;bottom:0;width:50%;transition:opacity 2.2s ease, background 2.8s ease}
+.demo-half{position:absolute;top:0;bottom:0;width:50%;transition:opacity 2.2s ease,background 2.8s ease}
 .demo-half.left{left:0;border-radius:200px 0 0 200px}
 .demo-half.right{right:0;border-radius:0 200px 200px 0}
-/* 中間文字 */
 .demo-orb-text{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;pointer-events:none}
 .demo-orb-main{font-family:'DM Serif Display',serif;font-size:22px;color:rgba(255,255,255,.92);letter-spacing:.03em;transition:opacity 1.6s ease}
 .demo-orb-sub{font-size:12px;color:rgba(255,255,255,.6);letter-spacing:.06em;transition:opacity 1.6s ease}
-/* 底部提示文字 */
 .demo-caption{font-size:13px;color:var(--ink3);letter-spacing:.04em;text-align:center;min-height:20px;transition:opacity 1.6s ease}
-
-/* GO 方塊按鈕 */
 .go-btn{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:300;padding:7px 24px;border-radius:var(--radius-sm);background:#daeaf5;color:#2d5f8a;border:none;cursor:pointer;letter-spacing:.18em;transition:transform .15s;box-shadow:0 2px 12px rgba(45,95,138,.12)}
 .go-btn:active{transform:scale(.97)}
 
@@ -186,26 +184,41 @@ canvas#compareChart{width:100%;height:140px;display:block;border-radius:var(--ra
 
 <!-- HOME PAGE -->
 <div id="page-home" class="page active">
-  <div class="home-logo">Breeeeeathe~</div>
-  <div class="home-slogan">用呼吸了解自己</div>
+  <div class="home-slider" id="homeSlider">
 
-  <div class="demo-wrap">
-    <div class="demo-orb-outer">
-      <div class="demo-orb-ring"></div>
-      <div class="demo-orb-ring2"></div>
-      <div class="demo-orb" id="demoOrb">
-        <div class="demo-half left" id="demoLeft"></div>
-        <div class="demo-half right" id="demoRight"></div>
-        <div class="demo-orb-text">
-          <div class="demo-orb-main" id="demoMain">吸氣</div>
-          <div class="demo-orb-sub" id="demoSub">按左邊</div>
-        </div>
+    <!-- slide 1: 文案 -->
+    <div class="home-slide">
+      <div class="home-logo">Breeeeeathe~</div>
+      <div class="home-slogan">用呼吸了解自己</div>
+      <div class="home-intro">
+        <p class="home-intro-p">我們想先讓你知道，你怎麼呼吸。</p>
+        <p class="home-intro-p">呼吸的狀態，就是你的狀態。<br>而當你開始有意識地呼吸，<br>狀態，就會悄悄改變。</p>
       </div>
+      <button class="home-nav-btn" onclick="homeSlide(1)">操作說明</button>
     </div>
-    <div class="demo-caption" id="demoCaption">左半邊按住 = 吸氣</div>
-  </div>
 
-  <button class="go-btn" onclick="showPage('sense')">GO</button>
+    <!-- slide 2: 操作示範 -->
+    <div class="home-slide">
+      <div class="demo-slide-title">HOW TO USE</div>
+      <div class="demo-wrap">
+        <div class="demo-orb-outer">
+          <div class="demo-orb-ring"></div>
+          <div class="demo-orb-ring2"></div>
+          <div class="demo-orb" id="demoOrb">
+            <div class="demo-half left" id="demoLeft"></div>
+            <div class="demo-half right" id="demoRight"></div>
+            <div class="demo-orb-text">
+              <div class="demo-orb-main" id="demoMain">吸氣</div>
+              <div class="demo-orb-sub" id="demoSub">按左邊</div>
+            </div>
+          </div>
+        </div>
+        <div class="demo-caption" id="demoCaption">左半邊按住 = 吸氣</div>
+      </div>
+      <button class="go-btn" onclick="showPage('sense')">GO</button>
+    </div>
+
+  </div>
 </div>
 
 <div id="page-sense" class="page">
@@ -653,15 +666,62 @@ function recordBreath(){}
 function updateLiveStats(){
   if(breaths.length===0)return;
   const recent=breaths.slice(-6);
-  const avgCycle=recent.reduce((s,b)=>s+b.inhaleMs+b.exhaleMs,0)/recent.length;
+  const avgCycle=recent.reduce((s,b)=>s+b.inhaleMs+b.exhaleMs+b.holdMs,0)/recent.length;
   const bpm=Math.round(60000/avgCycle*10)/10;
   const avgI=recent.reduce((s,b)=>s+b.inhaleMs,0)/recent.length;
   const avgE=recent.reduce((s,b)=>s+b.exhaleMs,0)/recent.length;
+  const avgH=recent.reduce((s,b)=>s+b.holdMs,0)/recent.length;
   const ie=avgI/avgE;
-  const cycles=recent.map(b=>b.inhaleMs+b.exhaleMs);
+  const cycles=recent.map(b=>b.inhaleMs+b.exhaleMs+b.holdMs);
   const mean=cycles.reduce((a,b)=>a+b,0)/cycles.length;
   const cv=Math.sqrt(cycles.reduce((s,c)=>s+Math.pow(c-mean,2),0)/cycles.length)/mean;
   const stability=Math.max(0,Math.min(100,Math.round((1-cv)*100)));
+
+  // ── 吸後屏 vs 吐後屏 判斷 ──
+  // 目前設計：放開=屏息，下一個動作是吸or吐決定上一次屏息的位置
+  // breaths 裡的 holdMs 是「吐氣後的屏息」（因為下一次吸氣才結算）
+  // 所以可以直接用：holdMs 大 = 吐後屏傾向
+  const holdRatio = avgH / (avgI + avgE + avgH); // 屏息佔整體比例
+  const holdAfterExhaleAvg = avgH; // 目前架構只記錄吐後屏
+
+  // ── 呼吸法比對 ──
+  const iRatio = avgI / avgCycle;
+  const eRatio = avgE / avgCycle;
+  const hRatio = holdRatio;
+  let matchedPattern = null;
+
+  // 比對邏輯：模糊匹配，允許 ±30% 誤差
+  const patterns = [
+    {
+      name:'Box Breathing', key:'box',
+      check: () => Math.abs(iRatio-0.25)<0.08 && Math.abs(eRatio-0.25)<0.08 && hRatio>0.15,
+      desc:'吸吐屏各佔約四分之一，節律均等'
+    },
+    {
+      name:'4-7-8 呼吸', key:'478',
+      check: () => eRatio>0.38 && hRatio>0.28 && iRatio<0.22,
+      desc:'吐氣最長、屏息次之、吸氣最短'
+    },
+    {
+      name:'共振呼吸', key:'xiangzhen',
+      check: () => hRatio<0.08 && Math.abs(iRatio-0.5)<0.12 && bpm>=5 && bpm<=7,
+      desc:'吸吐近乎等長，幾乎無屏息，頻率約 6 BPM'
+    },
+    {
+      name:'延長吐氣', key:'sighing',
+      check: () => eRatio>0.45 && hRatio<0.12,
+      desc:'吐氣顯著長於吸氣，屏息極短'
+    },
+    {
+      name:'Pranayama 入門', key:'478',
+      check: () => hRatio>=0.2 && hRatio<=0.35 && eRatio>iRatio,
+      desc:'有意識的吸後屏息，吐氣長於吸氣'
+    },
+  ];
+
+  for(const p of patterns){
+    if(p.check()){matchedPattern=p;break;}
+  }
 
   document.getElementById('statBPM').textContent=bpm.toFixed(1);
   document.getElementById('statIE').textContent=(avgI/1000).toFixed(1)+':'+(avgE/1000).toFixed(1);
@@ -670,25 +730,46 @@ function updateLiveStats(){
   if(breaths.length>=3){
     const key=classify(bpm,ie,stability);
     const s=STATES[key];
-    // 狀態標題寫進圓圈，隱藏吸吐氣文字
     const orbStateEl=document.getElementById('orbStateName');
     const orbMainEl=document.getElementById('orbMain');
     orbStateEl.textContent=s.label;
-    orbMainEl.style.display='none'; // 有狀態後不再顯示「吸氣中／吐氣中」
-    // 說明區塊顯示在圓圈下方
+    orbMainEl.style.display='none';
+
     const block=document.getElementById('stateDescBlock');
     document.getElementById('stateTag').textContent=s.label;
     document.getElementById('stateTag').className='state-tag '+s.cls;
-    document.getElementById('stateDesc').textContent=s.desc;
+
+    // 加入屏息分析文字
+    let holdNote='';
+    if(avgH>300){
+      const holdSec=(avgH/1000).toFixed(1);
+      holdNote=`你的屏息平均約 ${holdSec} 秒，佔整體呼吸的 ${Math.round(holdRatio*100)}%。`;
+      if(holdRatio>0.25) holdNote+='屏息比例較高，有助於深化副交感反應。';
+      else if(holdRatio<0.1) holdNote+='屏息時間較短，身體可能仍在調整節律。';
+    }
+
+    // 加入呼吸法比對文字
+    let patternNote='';
+    if(matchedPattern){
+      patternNote=`你目前的呼吸節律接近「${matchedPattern.name}」——${matchedPattern.desc}。`;
+    }
+
+    const descBase=s.desc;
+    const fullDesc=[descBase, holdNote, patternNote].filter(Boolean).join(' ');
+    document.getElementById('stateDesc').textContent=fullDesc;
+
     document.getElementById('methodTags').innerHTML=s.methods.map(m=>`<span class="method-tag">${m}</span>`).join('');
-    // 前往小憩練習的連結（防止重複插入）
     const existingLink=document.querySelector('.practice-link');
     if(existingLink) existingLink.remove();
-    const xiaoqiURL=`https://flow222git.github.io/jte-xiaoqi-2026/?practice=${s.practice}`;
+
+    // 如果有比對到呼吸法，優先連結對應練習
+    const practiceKey=matchedPattern?matchedPattern.key:s.practice;
+    const practiceName=matchedPattern?matchedPattern.name:s.practiceName;
+    const xiaoqiURL=`https://flow222git.github.io/jte-xiaoqi-2026/?practice=${practiceKey}`;
     document.getElementById('methodTags').insertAdjacentHTML('afterend',
       `<a class="practice-link" href="${xiaoqiURL}" target="_blank">
         <span>現在就去練習</span>
-        <span class="practice-link-label">${s.practiceName} →</span>
+        <span class="practice-link-label">${practiceName} →</span>
       </a>`
     );
     block.style.display='block';
@@ -998,6 +1079,11 @@ function drawCompareChart(sessions){
     ctx.textAlign='center';
     ctx.fillText((d.getMonth()+1)+'/'+(d.getDate()),x,H-4*devicePixelRatio);
   });
+}
+
+function homeSlide(n){
+  const slider=document.getElementById('homeSlider');
+  if(slider) slider.style.transform=n===1?'translateX(-50%)':'translateX(0)';
 }
 
 function showPage(name){
